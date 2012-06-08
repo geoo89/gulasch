@@ -1,10 +1,12 @@
 require 'shortcut'
 require 'render'
 require 'textures'
+require 'field'
 
 function love.load()
     -- print("Test")
     loadTextures()
+    fieldInit()
     isPaused = false
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
@@ -31,6 +33,7 @@ function love.draw()
     render:add(textures["particle.png"], 100, 100, 0, 150)
     render:add(textures["particle.png"], 110, 110, -1, 255)
     --render:add(ps, 200, 200, 0, 10)
+    field:shade()
     render:draw()
 end
 

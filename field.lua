@@ -7,15 +7,19 @@ RIGHT = -2
 
 function DefaultCell()
     local cell = {}
-    cell.background = "NONE.PNG";
-    cell.topImg     = "NOBAR_H.PNG";
-    cell.leftImg    = "NOBAR_V.PNG";
+    cell.background = "NONE.png";
+    cell.topImg     = "NOBAR_H.png";
+    cell.leftImg    = "NOBAR_V.png";
     cell.colTop = false;
     cell.colLeft = false;
     cell.portals = {};
     
+    function cell:shade(xmin,ymin,updir)
+        render:add(textures[cell.background], xmin, ymin, 1, 255)
+    end
+    
     return cell;
-end;
+end
 
 function Portal()
     local portal = {}
@@ -104,7 +108,7 @@ function DefaultField()
         
         self:get(x1,y1).portals[side1] = portal1;
         self:get(x2,y2).portals[side2] = portal2;
-    end;
+    end
     
     function field:go(x,y,dir,dirup)
         local dx, dy
@@ -128,11 +132,21 @@ function DefaultField()
                 portal.upin == dirup and portal.upout or -portal.upout;
     end;
     
+    function field:shade(px,py,updir)
+        field:get(1,1):shade(cx,cy,RIGHT)
+        --x, y = math.floor(px), math.floor(py)
+    end
+    
     return field;
-end;
+end
 
+cx       = 500
+cy       = 500
+cellSize = 128
+resX     = 1024
+rexY     = 768
 
-function sektiLoad()
+function fieldInit()
     field = DefaultField()
     field:openPortal(1,1,4,3,RIGHT,UP,LEFT,UP)
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
