@@ -6,22 +6,31 @@ function render:sort()
 end
 
 -- Adds Drawable object
-function render:add(obj, minx, miny, z, brightness, w, h, r)
+function render:add(obj, minx, miny, z, brightness, sx, sy, r)
     assert(obj, "Draw object does not exist")
     assert(minx and miny and z, "Dimensions not given")
     local brightness = brightness or 255
     
+    -- Bug: scales about center
+    
     -- Scale images
-    local sx = 1.0
-    local sy = 1.0
-    if obj:typeOf("Image") and maxx and maxy then
+    local sx = sx or 1.0
+    local sy = sy or 1.0
+    --[[w = w or obj:getWidth()
+    h = h or obj:getHeight()
+    if obj:typeOf("Image") then
         sx = w / obj:getWidth()
         sy = h / obj:getHeight()
-    end
+    end]]--
 
+    -- Rotation
     r = r or 0
-    ox = w / 2
-    oy = h / 2
+    
+    -- Move into centre
+    ox = sx * obj:getWidth() / 2
+    minx = minx + ox
+    oy = sy * obj:getHeight() / 2
+    miny = miny + oy
     
     local o = {inner = obj, x = minx, y = miny, z = z, bright = brightness, sx = sx, sy = sy, r = r, w = w, h = h, ox = ox, oy = oy}
     
