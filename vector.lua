@@ -1,7 +1,10 @@
 -- 2D vector class
 vector = {}
 function vector.new(x, y)
-    return setmetatable({x = x, y = y}, vector)
+    return setmetatable({x = x, y = y, 
+        length = function() return math.sqrt(x * x + y * y) end,
+        ortho = function() return vector.new(-y, x) end,
+        dot = function(b) return x*b.x + y*b.y end}, vector)
 end
 
 function vector.__add(a, b)
@@ -22,7 +25,7 @@ function vector.__mul(a, b)
     elseif type(b) == "number" then
         return vector.new(b * a.x, b * a.y)
     else
-        return a.x * b.x + a.y * b.y
+        return vector.new(a.x * b.x, a.y * b.y);
     end
 end
 

@@ -25,9 +25,9 @@ function love.load()
     ps:setSpin(0,2*math.pi,1)
     ps:start()
     
-    v = vector.new(1, 2)
-    w = vector.new(3, 5)
-    print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3))
+    local v = vector.new(1, 2)
+    local w = vector.new(3, 5)
+    print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3) .. v.length() .. v.ortho() .. v.dot(w))
 end
 
 function love.draw()
