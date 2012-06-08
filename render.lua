@@ -2,7 +2,7 @@ render = {content = {}}
 
 -- Sorts z-coordinate
 function render:sort() 
-    table.sort(self, function (a, b) return a.z < b.z end)
+    table.sort(self.content, function (a, b) return a.z < b.z end)
 end
 
 -- Adds Drawable object

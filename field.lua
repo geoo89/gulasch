@@ -133,8 +133,11 @@ function DefaultField()
     end;
     
     function field:shade(px,py,updir)
+        x, y = math.floor(px), math.floor(py)
+        
+        
         field:get(1,1):shade(cx,cy,RIGHT)
-        --x, y = math.floor(px), math.floor(py)
+        
     end
     
     return field;
@@ -143,8 +146,6 @@ end
 cx       = 500
 cy       = 500
 cellSize = 128
-resX     = 1024
-rexY     = 768
 
 function fieldInit()
     field = DefaultField()
