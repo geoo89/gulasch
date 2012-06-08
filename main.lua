@@ -31,9 +31,9 @@ function love.draw()
     --gr.print("Hello World", 400, 300)
     --gr.draw(ps, 100, 100)
    
-    render:add(textures["particle.png"], 90, 90, -1, 200, 110, 120)
+    render:add(textures["particle.png"], 90, 90, 1, 200, 110, 120)
     render:add(textures["particle.png"], 100, 100, 0, 150)
-    render:add(textures["particle.png"], 110, 110, -1, 255)
+    render:add(textures["particle.png"], 110, 110, 1, 255)
     --render:add(ps, 200, 200, 0, 10)
     render:draw()
 end
