@@ -2,6 +2,7 @@ require 'shortcut'
 require 'render'
 require 'textures'
 require 'field'
+require 'vector'
 
 RESX=800
 RESY=600
@@ -23,6 +24,10 @@ function love.load()
     ps:setSpeed(1,5)
     ps:setSpin(0,2*math.pi,1)
     ps:start()
+    
+    v = vector.new(1, 2)
+    w = vector.new(3, 5)
+    print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3))
 end
 
 function love.draw()
@@ -33,9 +38,9 @@ function love.draw()
     --gr.print("Hello World", 400, 300)
     --gr.draw(ps, 100, 100)
    
-    render:add(textures["particle.png"], 90, 90, -1, 200, 110, 120)
+    render:add(textures["particle.png"], 90, 90, 1, 200, 110, 120)
     render:add(textures["particle.png"], 100, 100, 0, 150)
-    render:add(textures["particle.png"], 110, 110, -1, 255)
+    render:add(textures["particle.png"], 110, 110, 1, 255)
     --render:add(ps, 200, 200, 0, 10)
     field:shade()
     render:draw()
