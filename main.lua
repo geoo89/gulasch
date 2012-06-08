@@ -1,10 +1,13 @@
-
+require 'shortcut'
+require 'render'
+require 'textures'
 
 function love.load()
     -- print("Test")
+    loadTextures()
     isPaused = false
     
-    ps = love.graphics.newParticleSystem(love.graphics.newImage("particle.png"), 32)
+    ps = gr.newParticleSystem(textures["particle.png"], 32)
     ps:setEmissionRate(100)
     ps:setParticleLife(0.5,5)
     ps:setRadialAcceleration(100,500)
@@ -14,20 +17,20 @@ function love.load()
     ps:setSpeed(1,5)
     ps:setSpin(0,2*math.pi,1)
     ps:start()
-    
-    image = love.graphics.newImage("particle.png")
-    objects = {}
 end
 
 function love.draw()
-    love.graphics.print(love.timer.getFPS(),10,10,0,1,1)
-    love.graphics.print("Hello World", 400, 300)
-    love.graphics.draw(ps, 100, 100)
-    
-    for i in objects do
-        love.graphics.draw(i, 200, 200)
-    end
-    
+    gr.setBackgroundColor(0, 0, 0)
+    gr.clear()
+    gr.print(timer.getFPS(),10,10,0,1,1)
+    --gr.print("Hello World", 400, 300)
+    --gr.draw(ps, 100, 100)
+   
+    render:add(textures["particle.png"], 90, 90, 1, 200)
+    render:add(textures["particle.png"], 100, 100, 0, 150)
+    render:add(textures["particle.png"], 110, 110, -1, 255)
+    --render:add(ps, 200, 200, 0, 1)
+    render:draw()
 end
 
 cnt = 0

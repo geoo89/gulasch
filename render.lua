@@ -6,8 +6,8 @@ function render:sort()
 end
 
 -- Adds Drawable object
-function render:add(img, x, y, z, brightness)
-    local o = {inner = img, x = x, y = y, z = z, bright = brightness}
+function render:add(obj, x, y, z, brightness)
+    local o = {inner = obj, x = x, y = y, z = z, bright = brightness}
     self[#self + 1] = o
 end
 
