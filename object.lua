@@ -1,33 +1,38 @@
-function object()
+function object(cx, cy, xrad, yrad, img, z)
     local o = {}
-    --[[
-    o.cx
-    o.cy
-    o.xrad
-    o.yrad
-    o.img
-    o.z]]
+    o.cx = cx
+    o.cy = cy
+    o.xrad = xrad
+    o.yrad = yrad
+    o.img = img
+    o.z = z or 0
     
     return o
 end
 
-function rigidBody()
-    local object = entity()
-    --[[
-    object.velx
-    object.vely
-    object.weight
-    object.grav --enum
-    ]]
-    return object
+function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
+    local o = object(cx, cy, xrad, yrad, img, z)
+    o.velx = velx or 0
+    o.vely = vely or 0
+    o.weight = weight or 1
+    o.grav = grav or DOWN
+
+    return o
 end
 
-function player()
-    local player = rigidBody();
-    player.
-    player.px, player.py = 0.5, 0.5
-    player.
-    
-    return player
+function makeplayer(cx, cy)
+    local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 0, 0, 0, 2, DOWN);
+    --p.cx, p.cy = 2.5, 2.5
+    --p.xrad, p.yrad = 0.25, 0.25
+    --p.velx, p.vely = 0,0
+    --p.weight = 2
+    --p.grav = DOWN
+    --p.z = 999
+    --p.img = "player.png"
+
+    return p
 end
 
+player = makeplayer(2.5, 2.5)
+
+objects = {player}
