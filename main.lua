@@ -25,7 +25,7 @@ function love.load()
     
     v = vector.new(1, 2)
     w = vector.new(3, 5)
-    print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3))
+    print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3) .. v.x .. v.y)
 end
 
 function love.draw()
