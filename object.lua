@@ -29,6 +29,13 @@ function makeplayer(cx, cy)
     --p.grav = DOWN
     --p.z = 999
     --p.img = "player.png"
+    
+    function p:move(dt)
+        if kb.isDown('up') then self.cy = self.cy - dt end 
+        if kb.isDown('down') then self.cy = self.cy + dt end
+        if kb.isDown('left') then self.cx = self.cx - dt end
+        if kb.isDown('right') then self.cx = self.cx + dt end
+    end
 
     return p
 end

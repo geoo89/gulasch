@@ -5,3 +5,4 @@ fs = love.filesystem
 img = love.image
 thread = love.thread
 timer = love.timer
+kb = love.keyboard

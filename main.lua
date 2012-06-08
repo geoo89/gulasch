@@ -3,6 +3,7 @@ require 'render'
 require 'textures'
 require 'field'
 require 'vector'
+require 'object'
 
 RESX=800
 RESY=600
@@ -41,6 +42,7 @@ function love.draw()
     render:add(textures["particle.png"], 90, 90, 1, 200, 110, 120)
     render:add(textures["particle.png"], 100, 100, 0, 150)
     render:add(textures["particle.png"], 110, 110, 1, 255)
+    render:add(textures[player.img], (player.cx - player.xrad) * 128, (player.cy - player.yrad) * 128, player.z, 255)
     --render:add(ps, 200, 200, 0, 10)
     field:shade()
     render:draw()
@@ -54,6 +56,8 @@ function love.update(dt)
     end
     
     ps:update(dt)
+    
+    player:move(dt)
     
     --if love.keyboard.isDown("up") then
     --cnt = cnt + 1
