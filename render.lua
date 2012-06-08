@@ -1,4 +1,4 @@
-render = {}
+render = {content = {}}
 
 -- Sort z-coordinate
 function render:sort() 
@@ -8,13 +8,13 @@ end
 -- Adds Drawable object
 function render:add(obj, x, y, z, brightness)
     local o = {inner = obj, x = x, y = y, z = z, bright = brightness}
-    self[#self + 1] = o
+    self.content[#self.content + 1] = o
 end
 
 -- Renders in correct order and with right brightness
 function render:draw()
     self:sort()
-    for i,v in ipairs(self) do
+    for i,v in ipairs(self.content) do
         -- doubleplusungood way to adjust brightness 
         gr.setColor(v.bright, v.bright, v.bright)
         gr.draw(v.inner, v.x, v.y)
@@ -26,5 +26,7 @@ function render:draw()
         -- h = v.inner:getHeight()
         -- gr.rectangle("fill", v.x, v.y, v.x + w - 1, v.y + h - 1)
     end
-    self={}
+    gr.setColor(255, 255, 255)
+
+    self.content = {}
 end
