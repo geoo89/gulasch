@@ -82,6 +82,7 @@ function love.update(dt)
         
         player:move(dt)
     else
+        editor:mouseMoved(mouse.getX(), mouse.getY())
         editor:update(dt)
     end
     --if love.keyboard.isDown("up") then
@@ -99,12 +100,6 @@ end
 function love.mousereleased(x, y, button)
     if mode == MODE.EDITOR then
         editor:mouseReleased(x, y, button)
-    end
-end
-
-function love.mousemove(x, y)
-    if mode == MODE.EDITOR then
-        editor:mouseMoved(x, y)
     end
 end
 
