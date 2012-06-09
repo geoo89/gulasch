@@ -13,6 +13,9 @@ PRIO_WALL =  300
 MARKER_PRIO = 900
 SIGHT_RANGE = 4
 
+DEFAULT_WIDTH = 64
+DEFAULT_HEIGHT = 32
+
 function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
     assertValidDir(downdir)
@@ -105,11 +108,13 @@ end
 
 cellCount = 0
 
-function DefaultCell()
+function DefaultCell(startWithWalls)
+    startWithWalls = startWithWalls or false
+
     local cell = {}
     cell.background = "NONE.png";
-    cell.colTop    = true
-    cell.colLeft   = true
+    cell.colTop    = startWithWalls
+    cell.colLeft   = startWithWalls
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
@@ -149,7 +154,21 @@ function dirToStr(dir)
     if(dir == UP) then return "UP"
     elseif(dir == DOWN) then return "DOWN"
     elseif(dir == LEFT) then return "LEFT"
-    elseif(dir == RIGHT) then return "RIGHT" end
+    else return "RIGHT" end
+end
+
+function dirFromStr(dirstr)
+    if(dirstr == "UP") then
+        return UP
+    elseif(dirstr == "DOWN") then
+        return DOWN
+    elseif(dirstr == "LEFT") then
+        return LEFT
+    elseif(dirstr == "RIGHT") then
+        return RIGHT
+    end
+    
+    error("dirFromStr: Invalid direction string ("..dirstr..")")
 end
 
 function dxytodir(dx,dy)
@@ -194,17 +213,20 @@ function nextdir(dir)
     end
 end
 
-function DefaultField()
+function DefaultField(w,h,startWithWalls)
+    w = w or DEFAULT_WIDTH
+    h = h or DEFAULT_HEIGHT
+
     local field = {};
-    field.width  = 64;
-    field.height = 32;
+    field.width  = w;
+    field.height = h;
     field._cells = {};
-    field._defCell = DefaultCell();
+    field._defCell = DefaultCell(startWithWalls);
     
     function defRow()
         local row = {};
         for i = 1,field.width do
-            row[i] = DefaultCell();
+            row[i] = DefaultCell(startWithWalls);
         end
         return row;
     end
@@ -397,35 +419,29 @@ function DefaultField()
         end
     end
     
-    if not markerStar then
-        markerStar = object(-1, -1, 1/2, 1/2, "star.png", MARKER_PRIO)
-        objects[#objects+1] = markerStar
-    end
-    
     function field:shadeEditor(offx, offy,hlx,hly)
         local xmin, xmax, ymin, ymax
         xmin = math.floor(math.max(1         , (-offx-WALLSIZE)     / CELLSIZE))
         xmax = math.floor(math.min(self.width, (RESX-offx-WALLSIZE) / CELLSIZE))
         ymin = math.floor(math.max(1         , (-offy-WALLSIZE)     / CELLSIZE))
         ymax = math.floor(math.min(self.height, (RESY-offy-WALLSIZE) / CELLSIZE))
-    
-        markerStar.cx = hlx + 0.5
-        markerStar.cy = hly + 0.5
         
         self:collectObjects();
+        
+        if not markerStar then
+            markerStar = object(-1, -1, 1/2, 1/2, "star.png", MARKER_PRIO)
+        end
+        
+        markerStar.cx = hlx + 0.5
+        markerStar.cy = hly + 0.5
+        local list = self:get(hlx,hly).objects
+        list[#list] = markerStar
+        
         for y = ymin,ymax do
             for x = xmin,xmax do
                 self:shadeCell(x, y, x * CELLSIZE + offx, y * CELLSIZE + offy, DOWN, RIGHT,255)
             end
         end
-        
-        -- print star over selected image
-        markerStar.cx = -1
-        markerStar.cy = -1
-    end
-    
-    function field:export(io)
-        
     end
     
     function field:shade()
@@ -552,18 +568,60 @@ function DefaultField()
         end
     end
     
+    function field:export(filename)
+        io.output = filename
+        io.write(self.width, " ", self.height, "\n")
+        
+        -- print list of non-walls
+        for y = 1,self.height do
+            for x = 1,self.width do
+                if(self:hasWall(x,y,TOP)) then
+                    io.write(x, " ", y, " ", dirToStr(TOP), " ")
+                end
+                
+                if(self:hasWall(x,y,LEFT)) then
+                    io.write(x, " ", y, " ", dirToStr(LEFT), " ")
+                end
+                
+                io.write("\n")
+            end
+        end
+        
+        io.write("\n", -1, " ", -1, " ", "END_OF_WALLS\n")
+    end
+    
     return field;
 end
+
+function import(filename)
+    io.input = filename
+    local w = io.read("*number")
+    local h = io.read("*number")
+    
+    local field = DefaultField(w,h)
+    
+    local x
+    local y
+    local dir
+    repeat
+        x = io.read("*number")
+        y = io.read("*number")
+        dir = io.read(20)
+        
+        if(dir ~= "END_OF_WALLS") then
+            field:toggleWall(x,y,dirFromStr(dir))
+        else
+            break;
+        end
+    until false
+end    
+    
 
 cx       = 500
 cy       = 500
 cellSize = 128
 
 function fieldInit()
-    
-    
-    field = DefaultField()
-    
     testfield = 1
     
     --field:get(3,2).colLeft = false
@@ -576,6 +634,7 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     
     if testfield == 1 then
+        field = DefaultField(20,20,true)
         player.cx = 2.5
         player.cy = 2.5
     
@@ -585,6 +644,7 @@ function fieldInit()
         field:get(4,2).colLeft = false
         field:get(5,2).colLeft = false
     elseif testfield == 2 then
+        field = DefaultField(20,20,true)
         player.cx = 2.5
         player.cy = 2.5
         field:get(4,3).colTop = false;
@@ -609,8 +669,11 @@ function fieldInit()
     
         field:openPortal(2,6,5,5,TOP,RIGHT,BOTTOM,RIGHT)
         field:openPortal(4,2,7,3,BOTTOM,RIGHT,TOP,RIGHT)
+    else
+        field = DefaultField()
     end
     
+    field:export("blabla.map")
     
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
