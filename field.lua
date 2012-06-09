@@ -286,12 +286,14 @@ objects = {}
 
 function fieldInit()
     field = DefaultField()
-    field:setTW(2,4)
+    field:setTW(1,3)
     field:setTW(2,3)
     field:setTW(3,3)
+    field:setTW(4,3)
+    field:setTW(5,3)
     --field:setTW(3,4)
     --field:setTW(4,2)
-    --field:openPortal(2,2,4,3,RIGHT,UP,DOWN,RIGHT)
+    field:openPortal(2,2,4,2,RIGHT,UP,RIGHT,UP)
     --print(field:go(1,1,RIGHT,UP,LEFT,UP))
     --print("lol")
 end
