@@ -8,9 +8,9 @@ editor = {
     cell_types = {"NONE.png", "goal.png"},
     
     -- Hack extra object names
-    object_types = {function() return object(0, 0, 0.1, 0.1, "crate.png", 999) end, 
-                    function() return object(0, 0, 0.1, 0.1, "crate2.png", 999) end}, 
-    object_names = {"crate.png", "crate2.png"}
+    object_types = {function() return rigidbody(0, 0, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN) end, 
+                    function() return rigidbody(0, 0, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN) end}, 
+    object_names = {"crate.png", "player.png"}
 } 
 
 editor.INC = 5.0
@@ -71,20 +71,24 @@ function editor:keyboard(key)
         ox = 0
         oy = 0
     elseif (key == self.keys.WLEFT) then
-        field:get(self.selectx, self.selecty).colLeft = not field:get(self.selectx, self.selecty).colLeft
+        field:toggleWall(self.selectx, self.selecty, LEFT)
     elseif (key == self.keys.WRIGHT) then
-        field:get(self.selectx + 1, self.selecty).colLeft = not field:get(self.selectx + 1, self.selecty).colLeft
+        field:toggleWall(self.selectx, self.selecty, RIGHT)
     elseif (key == self.keys.WUP) then
-        field:get(self.selectx, self.selecty).colTop = not field:get(self.selectx, self.selecty).colTop
+        field:toggleWall(self.selectx, self.selecty, UP)
     elseif (key == self.keys.WDOWN) then
-        field:get(self.selectx, self.selecty + 1).colTop = not field:get(self.selectx, self.selecty + 1).colTop
+        field:toggleWall(self.selectx, self.selecty, DOWN)
     elseif (key == self.keys.CYCLE) then
         local o = self:getObject()
         
         if (o) then
             -- Hack
+            -- Change object type
             local cur = table.find(self.object_names, o.img)
-            local next = self.object_types[cur % #self.object_types + 1]
+            local next = self.object_types[cur % #self.object_types + 1]()
+            next.cx = o.cx
+            next.cy = o.cy
+            
             local idx = table.find(objects, o)
             objects[idx] = next
         else
