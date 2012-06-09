@@ -8,8 +8,8 @@ RIGHT = -2
 CELLSIZE = 128
 WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
-PRIO_BACK = 10
-PRIO_WALL =  9
+PRIO_BACK =   10
+PRIO_WALL =  300
 SIGHT_RANGE = 5
 
 function transformOffset(x,y,downdir,rightdir)
@@ -100,30 +100,10 @@ function DefaultCell()
     cell.background = "NONE.png";
     cell.colTop    = true
     cell.colLeft   = true
-    cell.topImg     = "BAR_H.png";
-    cell.leftImg    = "BAR_V.png";
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
-    cell.counter = cellCount
-    
-    
-    function cell:shade(xmin,ymin,downdir,rightdir,brightness)
-        -- rightdir: Direction the physically right side of the cell is faced to
-        -- downdir:  Direction the physically down  side of the cell is faced to
-        
-        drawTileInCell(xmin,ymin,0,0,1,1,self.background,downdir,rightdir,brightness,PRIO_BACK)
-        local wallPerc = WALLSIZE / CELLSIZE
-        
-        --Hack to have well ordered walls
-        drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,1+wallPerc,  wallPerc, self.topImg,  downdir,rightdir, brightness, PRIO_WALL + cell.counter / 1000)
-        drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,  wallPerc,1+wallPerc, self.leftImg, downdir,rightdir, brightness, PRIO_WALL + (cell.counter + 0.5) / 1000)
-        
-        for k,o in pairs(cell.objects) do
-            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z)
-        end
-    end
-    
+    cell.counter = cellCount    
     return cell;
 end
 
@@ -285,6 +265,36 @@ function DefaultField()
                 newdirup;
     end
     
+    function field:shadeCell(x,y,xmin,ymin,downdir,rightdir,brightness)
+        -- rightdir: Direction the physically right side of the cell is faced to
+        -- downdir:  Direction the physically down  side of the cell is faced to
+        local cell = self:get(x,y)
+        
+        drawTileInCell(xmin,ymin,0,0,1,1,cell.background,downdir,rightdir,brightness,PRIO_BACK)
+        local wallPerc = WALLSIZE / CELLSIZE
+        
+        --Hack to have well ordered walls
+        if(self:hasWall(x,y,UP)) then
+            drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,1+wallPerc,  wallPerc, "barh.png",  downdir,rightdir, brightness, PRIO_WALL + brightness + cell.counter / 1000)
+        end
+        
+        if(self:hasWall(x,y,LEFT)) then
+            drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,  wallPerc,1+wallPerc, "barv.png", downdir,rightdir, brightness, PRIO_WALL + brightness + (cell.counter + 0.5) / 1000)
+        end
+        
+        if(self:hasWall(x,y,DOWN)) then
+            drawTileInCell(xmin,ymin, -wallPerc,1-wallPerc,1+wallPerc, 1+wallPerc, "barh.png",  downdir,rightdir, brightness, PRIO_WALL + brightness + cell.counter / 1000)
+        end
+        
+        if(self:hasWall(x,y,RIGHT)) then
+            drawTileInCell(xmin,ymin,1-wallPerc,-wallPerc, 1+wallPerc,1+wallPerc, "barv.png", downdir,rightdir, brightness, PRIO_WALL + brightness + (cell.counter + 0.5) / 1000)
+        end
+        
+        for k,o in pairs(cell.objects) do
+            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z)
+        end
+    end
+    
     function field:hasWall(x,y,dir)
         assertValidDir(dir)
         local cell = self:get(x,y)
@@ -397,7 +407,7 @@ function DefaultField()
                     rightarrow = node.downdir == RIGHT and DOWN  or UP
                 end
                 
-                self:get(node.logx,node.logy):shade(px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, downarrow, rightarrow,255 * node.stepsleft / SIGHT_RANGE)
+                self:shadeCell(node.logx, node.logy, px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, downarrow, rightarrow,255 * node.stepsleft / SIGHT_RANGE)
                 
                 -- insert surrounding elements into toDo queue
                 if(node.stepsleft > 1) then
@@ -457,6 +467,8 @@ function fieldInit()
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
     --field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
+    field:get(3,2).colLeft = false
+    --field:get(2,2).colLeft = false
     
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
 end
