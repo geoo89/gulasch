@@ -1,10 +1,11 @@
 -- 2D vector class
 vector = {}
 function vector.new(x, y)
-    return setmetatable({x = x, y = y, 
+    return setmetatable({x = x or 0, y = y or 0, 
         length = function() return math.sqrt(x * x + y * y) end,
         ortho = function() return vector.new(-y, x) end,
-        dot = function(b) return x*b.x + y*b.y end}, vector)
+        dot = function(b) return x*b.x + y*b.y end,
+        abs = function() return vector.new(math.abs(x), math.abs(y)) end}, vector)
 end
 
 function vector.__add(a, b)
@@ -26,6 +27,16 @@ function vector.__mul(a, b)
         return vector.new(b * a.x, b * a.y)
     else
         return vector.new(a.x * b.x, a.y * b.y);
+    end
+end
+
+function vector.__div(a, b)
+    if type(a) == "number" then
+        return vector.new(a / b.x, a / b.y)
+    elseif type(b) == "number" then
+        return vector.new(b / a.x, b / a.y)
+    else
+        return vector.new(a.x / b.x, a.y / b.y);
     end
 end
 

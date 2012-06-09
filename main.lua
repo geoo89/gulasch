@@ -2,6 +2,7 @@ require 'shortcut'
 require 'render'
 require 'textures'
 require 'vector'
+require 'object'
 
 RESX=800
 RESY=600
@@ -43,6 +44,13 @@ function love.draw()
     render:add(textures["particle.png"], 90, 90, 1, 20, 1, 1)
     render:add(textures["particle.png"], 100, 100, 0, 150, 1, 1)
     render:add(textures["particle.png"], 110, 110, 1, 255, 1, 1)
+    render:add(textures["particle.png"], 90, 90, 1, 200, 110, 120)
+    render:add(textures["particle.png"], 100, 100, 0, 150)
+    render:add(textures["particle.png"], 110, 110, 1, 255)
+    for i,v in pairs(objects) do
+        v:render()
+    end
+    --render:add(textures[player.img], (player.cx - player.xrad) * 128, (player.cy - player.yrad) * 128, player.z, 255)
     --render:add(ps, 200, 200, 0, 10)
     --field:shade()
     render:draw()
@@ -56,6 +64,17 @@ function love.update(dt)
     end
     
     ps:update(dt)
+    
+    objects = map(objects, function(o) return o:update(dt) end)
+    
+    for i1,v1 in pairs(objects) do
+        for i2,v2 in pairs(objects) do
+            if (i1 < i2) then collide(v1,v2) end
+        end
+    end
+    
+    
+    player:move(dt)
     
     --if love.keyboard.isDown("up") then
     --cnt = cnt + 1

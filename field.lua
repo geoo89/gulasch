@@ -5,6 +5,8 @@ DOWN  = BOTTOM
 LEFT  =  2
 RIGHT = -2
 
+CELLSIZE = 128
+
 function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
@@ -13,6 +15,7 @@ function DefaultCell()
     cell.colTop = false;
     cell.colLeft = false;
     cell.portals = {};
+    cell.objects = {};
     
     function cell:shade(xmin,ymin,updir)
         render:add(textures[cell.background], xmin, ymin, 1, 255)
@@ -132,11 +135,39 @@ function DefaultField()
                 portal.upin == dirup and portal.upout or -portal.upout;
     end;
     
-    function field:shade(px,py,updir)
+    function field:collectObjects()
+        for i in 1,width do
+            for j in 1,height do
+                self:get(i,j).objects = {}
+            end
+        end
+        
+        for k,e in pairs(objects) do
+            local x = math.floor(e.cx)
+            local y = math.floor(e.cy)
+            
+            local map = self:get(x,y).objects;
+            map[#map+1] = e;
+        end
+    end
+    
+    function field:shade()
+        --[[ local px = RESX / 2;
+        local py = RESY / 2;
+        
+        px = px - (player.cx % 1) * CELLSIZE
+        py = py - (player.cy % 1) * CELLSIZE
+        
+        
+        
+        
+        self:collectObjects();
+        
+        RESX, RESY
         x, y = math.floor(px), math.floor(py)
         
         
-        field:get(1,1):shade(cx,cy,RIGHT)
+        field:get(1,1):shade(cx,cy,RIGHT)]]
         
     end
     
@@ -146,6 +177,8 @@ end
 cx       = 500
 cy       = 500
 cellSize = 128
+
+objects = {}
 
 function fieldInit()
     field = DefaultField()
