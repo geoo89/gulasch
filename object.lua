@@ -37,9 +37,12 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         o.velx = o.velx + GRAV_STRENGTH * ax * dt
         o.vely = o.vely + GRAV_STRENGTH * ay * dt
         
-        -- TODO: CHECK HERE IF WE TRAVERSE THROUGH A PORTAL
         local intx = math.floor(o.cx)
         local inty = math.floor(o.cy)
+
+        if intx == WINNINGX and inty == WINNINGY and (not (self == player))
+            then WON = true
+        end
         
         o.cx = o.cx + o.velx * dt
         o.cy = o.cy + o.vely * dt
@@ -48,11 +51,14 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local inty2 = math.floor(o.cy)
         local fx = o.cx % 1
         local fy = o.cy % 1
+
         
         local dx = intx2 - intx
         local dy = inty2 - inty
         
         -- TODO: FIX IF BOTH VALUES ARE NONZERO
+        assert(dx == 0 or dy == 0, "You can't move from one cell to a diagonally adjacent one in one frame")
+        
         if dx==0 and dy == 0 then return self end
         
         print("dx",dx,dy)
@@ -182,11 +188,11 @@ end
 
 player = makeplayer(1.5, 1.5)
 
-o1 = rigidbody(3.5, 1.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, DOWN)
+o1 = rigidbody(3.5, 2.5, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN)
 o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
 o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
 
-objects = {player}
+objects = {player, o1}
 
 function collide(r1, r2)
     if (r1.rigid and r2.rigid) then
