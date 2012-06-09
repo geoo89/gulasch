@@ -366,9 +366,6 @@ function DefaultField()
         print("cellx: ", cellx)
         print("celly: ", celly)
         
-        px = px - (player.cx % 1) * CELLSIZE
-        py = py - (player.cy % 1) * CELLSIZE
-        
         function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir)
             local node = {}
             assertValidDir(downdir)
@@ -386,7 +383,18 @@ function DefaultField()
         local toDo = {}
         local done = {}
         
-        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, player.mirrored and -nextdir(player.grav) or nextdir(player.grav))
+        player.mirrored = true
+        
+        local playerright = player.mirrored and -nextdir(player.grav) or nextdir(player.grav)
+        local ox
+        local oy
+        ox, oy = transformOffset(player.cx % 1, player.cy % 1, player.grav,playerright)
+        
+        px = px - ox * CELLSIZE
+        py = py - oy * CELLSIZE
+        
+        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, playerright)
+        
         local next   = 0
         local writer = 1
         
@@ -479,9 +487,9 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    field:openPortal(2,2,6,6,RIGHT,UP,RIGHT,UP)
-    field:get(3,3).colLeft = false
-    field:get(7,6).colLeft = false
+    field:openPortal(2,3,6,6,RIGHT,UP,RIGHT,UP)
+    --field:get(3,3).colLeft = false
+    --field:get(7,6).colLeft = false
     
     --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
     

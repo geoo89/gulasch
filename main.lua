@@ -14,7 +14,7 @@ function love.load()
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
     loadTextures()
     fieldInit()
-    isPaused = false
+    isPaused = true
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
     ps:setEmissionRate(100)
@@ -37,14 +37,14 @@ function love.draw()
     gr.clear()
     gr.print(timer.getFPS(),10,10,0,1,1)
     gr.print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100), 10, 20, 0,1,1)
-    --print(timer.getFPS())
-    --gr.print("Hello World", 400, 300)
-    --gr.draw(ps, 100, 100)
-   
+
     if not isPaused then
         field:shade()
     end
+
     render:draw()
+    
+    gr.print(timer.getFPS(),10,10,0,1,1)
 end
 
 cnt = 0
@@ -69,7 +69,6 @@ function love.update(dt)
         end
     end
     
-    
     player:move(dt)
     
     --if love.keyboard.isDown("up") then
@@ -85,7 +84,7 @@ function love.mousereleased(x, y, button)
 end
 
 function love.keypressed(key, unicode)
-
+    isPaused = false
 end
 
 function love.focus(f)
