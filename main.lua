@@ -3,6 +3,7 @@ require 'render'
 require 'textures'
 require 'vector'
 require 'object'
+--require 'field'
 
 RESX=800
 RESY=600
