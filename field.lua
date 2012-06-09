@@ -6,12 +6,17 @@ LEFT  =  2
 RIGHT = -2
 
 CELLSIZE = 128
-WALLSIZE =  16
+WALLSIZE =   8
+WALLPERC =  WALLSIZE / CELLSIZE
 PRIO_BACK = 10
 PRIO_WALL =  9
 SIGHT_RANGE = 5
 
 function transformOffset(x,y,downdir,rightdir)
+    assertValidDir(rightdir)
+    assertValidDir(downdir)
+    assert(downdir ~= rightdir and downdir ~= -rightdir)
+    
     if(downdir == DOWN) then
         x = rightdir == RIGHT and x or 1 - x
     elseif(downdir == UP) then
@@ -42,14 +47,10 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     xmax,ymax = transformOffset(xmax,ymax,downdir,rightdir)
     
     --Now I have the actual screen position the top left corner of the image is mapped to
-    local mirrored = nextdir(downdir) == rightdir
+    local mirrored = nextdir(downdir) == rightdir and 1 or -1
     
-    if (mirrored) then
-        dimx = -dimx
-    end
-
-    physminx = cellx + math.min(xmin,xmax)
-    physminy = celly + math.min(ymin,ymax)
+    physminx = cellx + CELLSIZE * math.min(xmin,xmax)
+    physminy = celly + CELLSIZE * math.min(ymin,ymax)
     
     local angle
     if (downdir == DOWN) then
@@ -64,7 +65,8 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
         end
     end
     
-    render:add(textures[img], physminx, physminy, zprio, brightness, dimx, dimy, angle)
+    print(img, " px", physminx, " py", physminy, " z", zprio, " br", brightness, " ", mirrored, " ", 1, " ang", angle)
+    render:add(textures[img], physminx, physminy, zprio, brightness, mirrored, 1, angle)
 end
 
 cellCount = 0
@@ -72,6 +74,8 @@ cellCount = 0
 function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
+    cell.walltop    = true
+    cell.wallleft   = true
     cell.topImg     = "NOBAR_H.png";
     cell.leftImg    = "NOBAR_V.png";
     cell.colTop = false;
@@ -83,6 +87,9 @@ function DefaultCell()
     
     
     function cell:shade(xmin,ymin,downdir,rightdir,brightness)
+        -- rightdir: Direction the physically right side of the cell is faced to
+        -- downdir:  Direction the physically down  side of the cell is faced to
+        
         drawTileInCell(xmin,ymin,0,0,1,1,self.background,downdir,rightdir,brightness,PRIO_BACK)
         local wallPerc = WALLSIZE / CELLSIZE
         
@@ -90,8 +97,8 @@ function DefaultCell()
         drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,1+wallPerc,  wallPerc, self.topImg,  downdir,rightdir, brightness, PRIO_WALL + cell.counter / 1000)
         drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,  wallPerc,1+wallPerc, self.leftImg, downdir,rightdir, brightness, PRIO_WALL + (cell.counter + 0.5) / 1000)
         
-        for k,o in cell.objects do
-            drawTileInCell(xmin,ymin, o.cx - o.xrad, o.cy - o.yrad, o.cx + o.xrad, o.cy + o.yrad, o.img, downdir,rightdir, brightness, o.z)
+        for k,o in pairs(cell.objects) do
+            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z)
         end
     end
     
@@ -108,7 +115,12 @@ function Portal()
     return portal;
 end
 
+function assertValidDir(dir)
+    assert(dir == LEFT or dir == RIGHT or dir == UP or dir == DOWN, "Invalid direction: "..dir)
+end
+
 function dirtodxy(dir)
+    assertValidDir(dir)
     if (dir == LEFT) then
         return -1,0
     elseif (dir == RIGHT) then
@@ -117,9 +129,15 @@ function dirtodxy(dir)
         return 0,-1
     elseif (dir == BOTTOM) then
         return 0,1
-    else
-        assert(false, "dirtodxy: SHITTY INPUT");
     end
+end
+
+function dirToStr(dir)
+    assertValidDir(dir)
+    if(dir == UP) then return "UP"
+    elseif(dir == DOWN) then return "DOWN"
+    elseif(dir == LEFT) then return "LEFT"
+    elseif(dir == RIGHT) then return "RIGHT" end
 end
 
 function dxytodir(dx,dy)
@@ -137,6 +155,7 @@ function dxytodir(dx,dy)
 end
 
 function nextdir(dir)
+    assertValidDir(dir)
     if (dir == DOWN) then
         return RIGHT
     elseif(dir == RIGHT) then
@@ -144,7 +163,6 @@ function nextdir(dir)
     elseif(dir == UP) then
         return LEFT
     else
-        assert(dir == LEFT)
         return DOWN
     end
 end
@@ -176,6 +194,11 @@ function DefaultField()
     end
     
     function field:openPortal(x1,y1,x2,y2, side1, up1, side2, up2)
+        assertValidDir(side1)
+        assertValidDir(up1)
+        assertValidDir(side2)
+        assertValidDir(up2)
+    
         local portal1   = Portal();
         portal1.xin     = x1;
         portal1.xout    = x2;
@@ -201,13 +224,20 @@ function DefaultField()
     end
     
     function field:go(x,y,dir,dirup)
+        assertValidDir(dir)
+        
+        if(dirup) then
+            assertValidDir(dirup)
+        else
+            dirup = nextdir(dir)
+        end
+        
         local dx, dy
         dx, dy = dirtodxy(dir)
         local thisCell = self:get(x,y)
         
         if (not thisCell.portals[dir]) then
-            print("nope");
-            return x+dx,y+dy,dx,dy
+            return x+dx,y+dy,dir,dirup
         end
         
         --there is a portal
@@ -216,11 +246,43 @@ function DefaultField()
         local newy = portal.yout
         local otherCell = self:get(newx,newy)
         
-        return newx,
+        local newdir   = -portal.sideout
+        local newdirup;
+        if(dirup == dir) then newdirup = newdir
+        elseif(dirup == -dir) then newdirup = -newdir
+        else
+            newdirup = portal.upin == dirup and portal.upout or -portal.upout
+        end
+        
+        assertValidDir(newdir)
+        assertValidDir(newdirup)
+        
+        return  newx,
                 newy,
-                -portal.sideout,
-                portal.upin == dirup and portal.upout or -portal.upout;
-    end;
+                newdir,
+                newdirup;
+    end
+    
+    function field:hasWall(x,y,dir)
+        assertValidDir(dir)
+        local cell = self:get(x,y)
+        
+        if(cell.portals[dir]) then
+            return false
+        end
+        
+        if (dir == TOP) then
+            return cell.walltop
+        elseif (dir == LEFT) then
+            return cell.wallleft
+        elseif (dir == RIGHT) then
+            if (cell.portals[RIGHT]) then return false end
+            return self:get(x+1,y).wallleft
+        else
+            if(cell.portals[DOWN]) then return false end
+            return self:get(x,y+1).walltop
+        end
+    end
     
     function field:collectObjects()
         for i = 1,self.width do
@@ -239,18 +301,34 @@ function DefaultField()
     end
     
     function field:shade()
+        drawTileInCell(CELLSIZE,  CELLSIZE,  0,  0,1,1,"NONE.png",DOWN, RIGHT, 255,1)
+        drawTileInCell(2*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT,UP,    255,1)
+        drawTileInCell(3*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",UP,   LEFT,  255,1)
+        drawTileInCell(4*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",LEFT, DOWN,  255,1)
+        
+        drawTileInCell(CELLSIZE,  2*CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT, DOWN, 255,1)
+        --drawTileInCell(2*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",UP,    RIGHT,255,1)
+        --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
+        --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
+        if true then return end
+        
         self:collectObjects();
-    
+        
         local px = RESX / 2;
         local py = RESY / 2;
         local cellx = math.floor(player.cx)
         local celly = math.floor(player.cy)
+        
+        print("cellx: ", cellx)
+        print("celly: ", celly)
         
         px = px - (player.cx % 1) * CELLSIZE
         py = py - (player.cy % 1) * CELLSIZE
         
         function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir)
             local node = {}
+            assertValidDir(downdir)
+            assertValidDir(rightdir)
             node.logx     = logx
             node.logy     = logy
             node.screenx   = screenx
@@ -263,26 +341,29 @@ function DefaultField()
         
         local toDo = {}
         local done = {}
+        
         toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, nextdir(player.grav))
         local next   = 0
         local writer = 1
         
-        while(toDo[i]) do
-            node = toDo[i]
+        while(toDo[next]) do
+            node = toDo[next]
             next = next + 1
+            
+            print(node.logx.." "..node.logy)
             
             local continue = true
             
-            if(not done[screenx]) then
-                done[screenx] = { [node.screeny] = true }
-            elseif (done[screenx][screeny]) then
+            if(not done[node.screenx]) then
+                done[node.screenx] = { [node.screeny] = true }
+            elseif (done[node.screenx][node.screeny]) then
                 continue = false
             else
-                done[screenx][screeny] = true
+                done[node.screenx][node.screeny] = true
             end
             
             if (continue) then
-                self:get(node.logx,node.logy):shade(px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, node.downdir, node.rightdir,255 * stepsleft / SIGHT_RANGE)
+                self:get(node.logx,node.logy):shade(px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, node.downdir, node.rightdir,255 * node.stepsleft / SIGHT_RANGE)
                 
                 -- insert surrounding elements into toDo queue
                 if(node.stepsleft > 1) then
@@ -290,18 +371,38 @@ function DefaultField()
                     local newy;
                     local newdir;
                     local newother;
-                    newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.rightdir,node.downdir)
-                    toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - 1, newother, -newdir)
-                    writer = writer + 1
-                    newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.rightdir,node.downdir)
-                    toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - 1, newother,  newdir)
-                    writer = writer + 1
-                    newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.downdir, node.rightdir)
-                    toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, newdir,  newother)
-                    writer = writer + 1
-                    newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.downdir, node.rightdir)
-                    toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, -newdir,  newother)
-                    writer = writer + 1
+                    
+                    if(not field:hasWall(node.logx,node.logy,-node.rightdir)) then
+                        newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.rightdir,node.downdir)
+                        toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - 1, newother, -newdir)
+                        writer = writer + 1
+                        print (newx, newy, dirToStr(newother), dirToStr(-newdir))
+                        print "add left"
+                    end
+                    
+                    if(not field:hasWall(node.logx,node.logy,node.rightdir)) then
+                        newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.rightdir,node.downdir)
+                        toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - 1, newother,  newdir)
+                        writer = writer + 1
+                        print (newx, newy, dirToStr(newother), dirToStr(newdir))
+                        print "add right"
+                    end
+                    
+                    if(not field:hasWall(node.logx,node.logy,node.downdir)) then
+                        newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.downdir, node.rightdir)
+                        toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, newdir,  newother)
+                        writer = writer + 1
+                        print (newx, newy, dirToStr(newdir), dirToStr(newother))
+                        print "add down"
+                    end
+                    
+                    if(not field:hasWall(node.logx,node.logy,-node.downdir)) then
+                        newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.downdir, node.rightdir)
+                        toDo[writer] = toDoNode(node.screenx, node.screeny - 1, newx, newy, node.stepsleft - 1, -newdir,  newother)
+                        writer = writer + 1
+                        print (newx, newy, dirToStr(-newdir), dirToStr(newother))
+                        print "add top"
+                    end
                 end
             end
         end
@@ -318,7 +419,11 @@ objects = {}
 
 function fieldInit()
     field = DefaultField()
-    field:openPortal(1,1,4,3,RIGHT,UP,LEFT,UP)
+    --field:get(3,2).wallleft = false
+    --field:get(3,2).walltop = false
+    --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
+    field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
+    
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
     print("lol")
 end
