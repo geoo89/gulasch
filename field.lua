@@ -10,7 +10,7 @@ WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
 PRIO_BACK =   10
 PRIO_WALL =  300
-SIGHT_RANGE = 5
+SIGHT_RANGE = 4
 
 WINNINGX = 2
 WINNINGY = 2
@@ -344,6 +344,43 @@ function DefaultField()
         end
     end
     
+    function field:toggleWall(x,y,dir)
+        assertValidDir(dir)
+        local cell = self:get(x,y)
+        
+        if (dir == TOP) then
+            cell.colTop = not cell.colTop
+        elseif (dir == LEFT) then
+            cell.colLeft = not cell.colLeft
+        elseif (dir == RIGHT) then
+            cell = self:get(x+1,y)
+            cell.colLeft = not cell.colLeft
+        else
+            cell = self:get(x,y+1)
+            cell.colTop = not cell.colTop
+        end
+    end
+    
+    function field:toggleWallStrip(x,y,dir,...)
+        if not dir then return end
+        
+        assertValidDir(dir)
+        if(dir == TOP) then
+            field:toggleWall(x,y-1,LEFT)
+            y = y - 1
+        elseif(dir == DOWN) then
+            field:toggleWall(x,y,LEFT)
+            y = y + 1
+        elseif(dir == RIGHT) then
+            field:toggleWall(x,y,TOP)
+            x = x + 1
+        elseif(dir == LEFT) then
+            field:toggleWall(x-1,y,TOP)
+            x = x - 1
+        end
+        self:toggleWallStrip(x,y,...)
+    end
+    
     function field:collectObjects()
         for i = 1,self.width do
             for j = 1,self.height do
@@ -360,8 +397,25 @@ function DefaultField()
         end
     end
     
+    function field:shadeEditor(offx, offy,hlx,hly)
+        local xmin, xmax, ymin, ymax
+        xmin = math.floor(math.max(1         , (-offx-WALLSIZE)     / CELLSIZE))
+        xmax = math.floor(math.min(self.width, (RESX-offx-WALLSIZE) / CELLSIZE))
+        ymin = math.floor(math.max(1         , (-offy-WALLSIZE)     / CELLSIZE))
+        ymax = math.floor(math.min(self.height, (RESY-offy-WALLSIZE) / CELLSIZE))
+    
+        self:collectObjects();
+        for y = ymin,ymax do
+            for x = xmin,xmax do
+                self:shadeCell(x, y, x * CELLSIZE + offx, y * CELLSIZE + offy, DOWN, RIGHT,255)
+            end
+        end
+        
+        -- print star over selected image
+    end
+    
     function field:shade()
-        local OFFSET = CELLSIZE + 40
+        --local OFFSET = CELLSIZE + 40
         --field:shadeCell(5,5,0*OFFSET,OFFSET,DOWN,RIGHT,255)
         --field:shadeCell(5,5,1*OFFSET,OFFSET,RIGHT,UP,255)
         --field:shadeCell(5,5,2*OFFSET,OFFSET,UP,LEFT,255)
@@ -382,7 +436,8 @@ function DefaultField()
         --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
         --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
         
-        --if true then return end
+--        field:shadeEditor(-200, -200)
+--        if true then return end
         
         self:collectObjects();
         
@@ -390,9 +445,6 @@ function DefaultField()
         local py = RESY / 2;
         local cellx = math.floor(player.cx)
         local celly = math.floor(player.cy)
-        
-        print("cellx: ", cellx)
-        print("celly: ", celly)
         
         function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir)
             local node = {}
@@ -433,8 +485,6 @@ function DefaultField()
             node = toDo[next]
             next = next + 1
             
-            print(node.logx.." "..node.logy)
-            
             local continue = true
             
             if(not done[node.screenx]) then
@@ -464,32 +514,24 @@ function DefaultField()
                         newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.rightdir,node.downdir)
                         toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - 1, newother, -newdir)
                         writer = writer + 1
-                        print (newx, newy, dirToStr(newother), dirToStr(-newdir))
-                        print "add left"
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,node.rightdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.rightdir,node.downdir)
                         toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - 1, newother,  newdir)
                         writer = writer + 1
-                        print (newx, newy, dirToStr(newother), dirToStr(newdir))
-                        print "add right"
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,node.downdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.downdir, node.rightdir)
                         toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, newdir,  newother)
                         writer = writer + 1
-                        print (newx, newy, dirToStr(newdir), dirToStr(newother))
-                        print "add down"
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,-node.downdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.downdir, node.rightdir)
                         toDo[writer] = toDoNode(node.screenx, node.screeny - 1, newx, newy, node.stepsleft - 1, -newdir,  newother)
                         writer = writer + 1
-                        print (newx, newy, dirToStr(-newdir), dirToStr(newother))
-                        print "add top"
                     end
                 end
             end
@@ -506,10 +548,12 @@ cellSize = 128
 objects = {}
 
 function fieldInit()
-    player.cx = 2.5
-    player.cy = 2.5
+    
     
     field = DefaultField()
+    
+    testfield = 0
+    
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
@@ -529,13 +573,46 @@ function fieldInit()
     field:get(3,3).colTop = true
     field:get(4,3).colTop = true
     field:get(5,3).colTop = true
-
     field:get(WINNINGX,WINNINGY).background = "goal.png"
+
+    if testfield == 1 then
+        player.cx = 2.5
+        player.cy = 2.5
+    
+        field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
+        field:get(3,2).colLeft = false
+        field:get(2,2).colLeft = false
+        field:get(4,2).colLeft = false
+        field:get(5,2).colLeft = false
+    elseif testfield == 2 then
+        player.cx = 2.5
+        player.cy = 2.5
+        field:get(4,3).colTop = false;
+        field:get(4,2).colLeft = false;
+        field:get(3,2).colLeft = false;
+        field:get(2,3).colTop = false;
+        field:get(2,4).colTop = false;
+        field:get(3,4).colLeft = false;
+        field:get(4,4).colLeft = false;
+        field:get(4,5).colTop = false;
+        field:get(4,6).colTop = false;
+        field:get(4,6).colLeft = false;
+        field:get(3,6).colLeft = false;
+        field:get(2,6).colTop = false;
+    
+        field:get(5,6).colTop = false;
+        field:get(5,5).colTop = false;
+        field:get(6,4).colLeft = false;
+        field:get(7,4).colLeft = false;
+        field:get(7,4).colTop = false;
+        field:get(7,3).colTop = false;
+    
+        field:openPortal(2,6,5,5,TOP,RIGHT,BOTTOM,RIGHT)
+        field:openPortal(4,2,7,3,BOTTOM,RIGHT,TOP,RIGHT)
+    end
     
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
     
     --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
-    
-    print(field:go(1,1,RIGHT,UP,LEFT,UP))
 end

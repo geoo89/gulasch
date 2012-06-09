@@ -12,10 +12,10 @@ RESY=600
 
 MODE = {
     RENDER = 0,
-    EDIT = 1
+    EDITOR = 1
 }
 
-mode = MODE.RENDER
+mode = MODE.EDITOR
 
 function love.load()
     -- print("Test")
@@ -46,18 +46,15 @@ function love.draw()
     gr.print(timer.getFPS(),10,10,0,1,1)
     gr.print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100), 10, 20, 0,1,1)
 
-    if not isPaused then
-        field:shade()
-    end
-
+    -- Draw field
     if mode == MODE.RENDER then
-        render:draw()
+        field:shade()
     else
-        editor:draw()
+        editor:shade()
     end
+    render:draw()
     
     gr.print(timer.getFPS(),10,10,0,1,1)
-    
     gr.print("Move crate to goal",10,30,0,1,1)
     if WON==true then gr.print("A winner is you!",30,50,0,1,1) end
 end
@@ -69,23 +66,24 @@ function love.update(dt)
         return
     end
     
-    ps:update(dt)
-    
-    objects = map(objects, function(o) return o:update(dt) end)
-    
-    for i1,v1 in pairs(objects) do
-        collidewall(v1)
-    end
-    --collidewall(player)
-
-    for i1,v1 in pairs(objects) do
-        for i2,v2 in pairs(objects) do
-            if (i1 < i2) then collide(v1,v2) end
+    if mode == MODE.RENDER then
+        objects = map(objects, function(o) return o:update(dt) end)
+        
+        for i1,v1 in pairs(objects) do
+            collidewall(v1)
         end
+        --collidewall(player)
+
+        for i1,v1 in pairs(objects) do
+            for i2,v2 in pairs(objects) do
+                if (i1 < i2) then collide(v1,v2) end
+            end
+        end
+        
+        player:move(dt)
+    else
+        editor:update(dt)
     end
-    
-    player:move(dt)
-    editor:update(dt)
     --if love.keyboard.isDown("up") then
     --cnt = cnt + 1
     --print(cnt)
@@ -93,22 +91,26 @@ function love.update(dt)
 end
 
 function love.mousepressed(x, y, button)
-end
-
-function love.mousereleased(x, y, button)
     if mode == MODE.EDITOR then
         editor:mouse(x, y, button)
     end
 end
 
+function love.mousereleased(x, y, button)
+end
+
 function love.keypressed(key, unicode)
+    if (key == 'q') then
+        os.exit()
+    end
+
     isPaused = false
     
     if (key == 'e') then
         mode = 1 - mode
     end
     
-    if mode == MODE.EDITOR then
+    if (mode == MODE.EDITOR) then
         editor:keyboard(key)
     end
 end
