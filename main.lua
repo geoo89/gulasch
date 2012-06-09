@@ -13,7 +13,7 @@ function love.load()
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
     loadTextures()
     fieldInit()
-    isPaused = false
+    isPaused = true
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
     ps:setEmissionRate(100)
@@ -34,7 +34,6 @@ end
 function love.draw()
     gr.setBackgroundColor(0, 0, 0)
     gr.clear()
-    gr.print(timer.getFPS(),10,10,0,1,1)
     --print(timer.getFPS())
     --gr.print("Hello World", 400, 300)
     --gr.draw(ps, 100, 100)
@@ -49,10 +48,13 @@ function love.draw()
     for i,v in pairs(objects) do
         v:render()
     end
+    
     --render:add(textures[player.img], (player.cx - player.xrad) * 128, (player.cy - player.yrad) * 128, player.z, 255)
     --render:add(ps, 200, 200, 0, 10)
     field:shade()
     render:draw()
+    
+    gr.print(timer.getFPS(),10,10,0,1,1)
 end
 
 cnt = 0
@@ -76,7 +78,6 @@ function love.update(dt)
             if (i1 < i2) then collide(v1,v2) end
         end
     end
-    
     
     player:move(dt)
     

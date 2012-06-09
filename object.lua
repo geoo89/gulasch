@@ -13,6 +13,7 @@ function object(cx, cy, xrad, yrad, img, z)
     o.yrad = yrad
     o.img = img
     o.z = z or 0
+    o.mirrored = false
     
     function o:update() return self end
     
@@ -51,6 +52,7 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local dx = intx2 - intx
         local dy = inty2 - inty
         
+        -- TODO: FIX IF BOTH VALUES ARE NONZERO
         if dx==0 and dy == 0 then return self end
         
         print(fx,fy)
@@ -64,6 +66,7 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         newx, newy, wurst, rgtdir = field:go(intx, inty, dir, RIGHT)
         newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
         print(dir, rgtdir, dwndir)
+        if (rgtdir == nextdir(dwndir)) then o.mirrored = not o.mirrored end
         
         fx,fy = transformOffset(fx,fy,dwndir,rgtdir)
         print(fx,fy)
@@ -83,7 +86,7 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
 end
 
 function makeplayer(cx, cy)
-    local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN);
+    local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 999, 0, 0, 2, UP);
     
     p.onfloor = true
     --p.cx, p.cy = 2.5, 2.5
@@ -97,20 +100,66 @@ function makeplayer(cx, cy)
     
     -- TODO: KEY TO GRAB CRATE
     function p:move(dt)
+        --print("Move: ", self.cx, self.cy)
+        
+        -- ugly cases
+        local x_air = 0
+        local y_air = 1
+        local x_floor = self.mirrored and -1 or 1
+        local y_floor = 0
+        if(self.grav == UP) then
+            x_air = 0
+            y_air = -1
+            x_floor = self.mirrored and 1 or -1
+            y_floor = 0
+        elseif (self.grav == LEFT) then
+            x_air = -1
+            y_air = 0
+            x_floor = 0
+            y_floor = self.mirrored and -1 or 1
+        elseif (self.grav == RIGHT) then
+            x_air = 1
+            y_air = 0
+            x_floor = 0
+            y_floor = self.mirrored and 1 or -1
+        end    
+        
+        print(self.onfloor)
+        
         if kb.isDown('up') and self.onfloor then
-            self.vely = self.vely - JUMP_STRENGTH/self.weight
+            self.velx = self.velx - JUMP_STRENGTH/self.weight * x_air
+            self.vely = self.vely - JUMP_STRENGTH/self.weight * y_air
             self.onfloor = false
         end 
-        if self.onfloor then self.velx = 0 end
+        if self.onfloor then 
+            self.velx = (1 - x_floor) * self.velx
+            self.vely = (1 - y_floor) * self.vely
+        end
 
         if kb.isDown('left') then
-            if self.onfloor then self.velx = -FLOOR_SPEED
-            else self.velx = self.velx - dt * AIR_ACCEL
+            if self.onfloor then
+                if x_floor ~= 0 then
+                    self.velx = -FLOOR_SPEED * x_floor
+                end
+                if y_floor ~= 0 then
+                    self.vely = -FLOOR_SPEED * y_floor
+                end
+            else 
+                self.velx = self.velx - dt * AIR_ACCEL * x_floor
+                self.vely = self.vely - dt * AIR_ACCEL * y_floor
             end
         end
         if kb.isDown('right') then
-            if self.onfloor then self.velx = FLOOR_SPEED
-            else self.velx = self.velx + dt * AIR_ACCEL
+            if self.onfloor then 
+                if x_floor ~= 0 then
+                    self.velx = FLOOR_SPEED * x_floor
+                end
+                if y_floor ~= 0 then
+                    self.vely = FLOOR_SPEED * y_floor
+                end
+            else 
+                self.velx = self.velx + dt * AIR_ACCEL * x_floor
+                self.vely = self.vely + dt * AIR_ACCEL * y_floor
             end
         end
         
@@ -120,7 +169,7 @@ function makeplayer(cx, cy)
     return p
 end
 
-player = makeplayer(2.5, 2.5)
+player = makeplayer(2.5, 3.5)
 
 o1 = rigidbody(3.5, 1.5, 0.125, 0.125, "crate.png", 1, 0, 0, 1, DOWN)
 o2 = rigidbody(3.5, 3.5, 0.125, 0.125, "crate.png", 1, 0, 0, 1, UP)
@@ -144,16 +193,16 @@ function collide(r1, r2)
                 r1.velx = (r1.weight > 99999 or r2.weight > 99999) and 0 or v
                 r2.velx = (r1.weight > 99999 or r2.weight > 99999) and 0 or v
 
-                if r1.cx < r2.cx then
+                if r1.cx < r2.cx then -- r1 left of r2
                     r1.cx = r1.cx + xoffset -- cx gets decreased (moves left)
                     if r1.grav == RIGHT then r1.onfloor = true end
                     r2.cx = r2.cx - xoffset -- cx gets increased (moves right)
                     if r2.grav == LEFT then r2.onfloor = true end
                 else
                     r1.cx = r1.cx - xoffset -- cx gets decreased (moves left)
-                    if r1.grav == RIGHT then r1.onfloor = true end
+                    if r1.grav == LEFT then r1.onfloor = true end
                     r2.cx = r2.cx + xoffset -- cx gets increased (moves right)
-                    if r2.grav == LEFT then r2.onfloor = true end
+                    if r2.grav == RIGHT then r2.onfloor = true end
                 end
             else
                 local v = (r1.weight * r1.vely + r2.weight * r2.vely) / (r1.weight + r2.weight)
@@ -167,9 +216,9 @@ function collide(r1, r2)
                     if r2.grav == UP then r2.onfloor = true end
                 else
                     r1.cy = r1.cy - yoffset -- cy gets decreased (moves up)
-                    if r1.grav == DOWN then r1.onfloor = true end
+                    if r1.grav == UP then r1.onfloor = true end
                     r2.cy = r2.cy + yoffset -- cy gets increased (moves down)
-                    if r2.grav == UP then r2.onfloor = true end
+                    if r2.grav == DOWN then r2.onfloor = true end
                 end
             end
         end
