@@ -4,11 +4,18 @@ require 'textures'
 require 'vector'
 require 'field'
 require 'object'
+require 'editor'
 --require 'field'
 
 RESX=800
 RESY=600
 
+MODE = {
+    RENDER = 0,
+    EDIT = 1
+}
+
+mode = MODE.RENDER
 
 function love.load()
     -- print("Test")
@@ -43,7 +50,11 @@ function love.draw()
         field:shade()
     end
 
-    render:draw()
+    if mode == MODE.RENDER then
+        render:draw()
+    else
+        editor:draw()
+    end
     
     gr.print(timer.getFPS(),10,10,0,1,1)
     
@@ -74,7 +85,7 @@ function love.update(dt)
     end
     
     player:move(dt)
-    
+    editor:update(dt)
     --if love.keyboard.isDown("up") then
     --cnt = cnt + 1
     --print(cnt)
@@ -85,10 +96,21 @@ function love.mousepressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
+    if mode == MODE.EDITOR then
+        editor:mouse(x, y, button)
+    end
 end
 
 function love.keypressed(key, unicode)
     isPaused = false
+    
+    if (key == 'e') then
+        mode = 1 - mode
+    end
+    
+    if mode == MODE.EDITOR then
+        editor:keyboard(key)
+    end
 end
 
 function love.focus(f)
