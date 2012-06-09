@@ -1,7 +1,7 @@
 require 'field'
 
-JUMP_STRENGTH = 5
-GRAV_STRENGTH = 2
+JUMP_STRENGTH = 4
+GRAV_STRENGTH = 1
 AIR_ACCEL = 1
 FLOOR_SPEED = 1
 
@@ -101,20 +101,17 @@ function makeplayer(cx, cy)
             self.vely = self.vely - JUMP_STRENGTH/self.weight
             self.onfloor = false
         end 
-        if self.onfloor then self.velx = 0 end
-
+        --if kb.isDown('down') then self.cy = self.cy + dt end
         if kb.isDown('left') then
-            if self.onfloor then self.velx = -FLOOR_SPEED
-            else self.velx = self.velx - dt * AIR_ACCEL
+            if self.onfloor then self.cx = self.cx - dt * AIR_ACCEL
+            else self.velx = self.velx - dt * FLOOR_SPEED
             end
         end
         if kb.isDown('right') then
-            if self.onfloor then self.velx = FLOOR_SPEED
-            else self.velx = self.velx + dt * AIR_ACCEL
+            if self.onfloor then self.cx = self.cx + dt * AIR_ACCEL
+            else self.velx = self.velx + dt * FLOOR_SPEED
             end
         end
-        
-        self.onfloor = false
     end
 
     return p
@@ -122,12 +119,12 @@ end
 
 player = makeplayer(2.5, 2.5)
 
-o1 = rigidbody(3.5, 1.5, 0.125, 0.125, "crate.png", 1, 0, 0, 1, DOWN)
-o2 = rigidbody(3.5, 3.5, 0.125, 0.125, "crate.png", 1, 0, 0, 1, UP)
+o1 = rigidbody(3.5, 1.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, DOWN)
+o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
 o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
 
---objects = {player}
-objects = {player, o1, o2, o3}
+objects = {player}
+--objects = {player, o1, o2, o3}
 
 function collide(r1, r2)
     if (r1.rigid and r2.rigid) then
@@ -141,34 +138,24 @@ function collide(r1, r2)
 
             if math.abs(xoffset) < math.abs(yoffset) then       
                 local v = (r1.weight * r1.velx + r2.weight * r2.velx) / (r1.weight + r2.weight)
-                r1.velx = (r1.weight > 99999 or r2.weight > 99999) and 0 or v
-                r2.velx = (r1.weight > 99999 or r2.weight > 99999) and 0 or v
+                r1.velx = v
+                r2.velx = v
 
                 if r1.cx < r2.cx then
                     r1.cx = r1.cx + xoffset -- cx gets decreased (moves left)
                     if r1.grav == RIGHT then r1.onfloor = true end
                     r2.cx = r2.cx - xoffset -- cx gets increased (moves right)
                     if r2.grav == LEFT then r2.onfloor = true end
-                else
-                    r1.cx = r1.cx - xoffset -- cx gets decreased (moves left)
-                    if r1.grav == RIGHT then r1.onfloor = true end
-                    r2.cx = r2.cx + xoffset -- cx gets increased (moves right)
-                    if r2.grav == LEFT then r2.onfloor = true end
                 end
             else
                 local v = (r1.weight * r1.vely + r2.weight * r2.vely) / (r1.weight + r2.weight)
-                r1.vely = (r1.weight > 99999 or r2.weight > 99999) and 0 or v
-                r2.vely = (r1.weight > 99999 or r2.weight > 99999) and 0 or v
+                r1.vely = v
+                r2.vely = v
 
                 if r1.cy < r2.cy then
                     r1.cy = r1.cy + yoffset -- cy gets decreased (moves up)
                     if r1.grav == DOWN then r1.onfloor = true end
                     r2.cy = r2.cy - yoffset -- cy gets increased (moves down)
-                    if r2.grav == UP then r2.onfloor = true end
-                else
-                    r1.cy = r1.cy - yoffset -- cy gets decreased (moves up)
-                    if r1.grav == DOWN then r1.onfloor = true end
-                    r2.cy = r2.cy + yoffset -- cy gets increased (moves down)
                     if r2.grav == UP then r2.onfloor = true end
                 end
             end
