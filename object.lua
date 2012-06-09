@@ -55,6 +55,7 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         -- TODO: FIX IF BOTH VALUES ARE NONZERO
         if dx==0 and dy == 0 then return self end
         
+        print("dx",dx,dy)
         print(fx,fy)
         
         local dir = dxytodir(dx,dy)
@@ -66,7 +67,9 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         newx, newy, wurst, rgtdir = field:go(intx, inty, dir, RIGHT)
         newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
         print(dir, rgtdir, dwndir)
-        if (rgtdir == nextdir(dwndir)) then o.mirrored = not o.mirrored end
+        if (rgtdir ~= nextdir(dwndir)) then o.mirrored = not o.mirrored end
+        
+        print("mirrored", self.mirrored)
         
         fx,fy = transformOffset(fx,fy,dwndir,rgtdir)
         print(fx,fy)
@@ -86,7 +89,7 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
 end
 
 function makeplayer(cx, cy)
-    local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 999, 0, 0, 2, UP);
+    local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN);
     
     p.onfloor = true
     --p.cx, p.cy = 2.5, 2.5
@@ -101,6 +104,7 @@ function makeplayer(cx, cy)
     -- TODO: KEY TO GRAB CRATE
     function p:move(dt)
         --print("Move: ", self.cx, self.cy)
+        
         
         -- ugly cases
         local x_air = 0
@@ -124,7 +128,7 @@ function makeplayer(cx, cy)
             y_floor = self.mirrored and 1 or -1
         end    
         
-        print(self.onfloor)
+        --print(self.onfloor)
         
         if kb.isDown('up') and self.onfloor then
             self.velx = self.velx - JUMP_STRENGTH/self.weight * x_air
@@ -149,8 +153,7 @@ function makeplayer(cx, cy)
                 self.velx = self.velx - dt * AIR_ACCEL * x_floor
                 self.vely = self.vely - dt * AIR_ACCEL * y_floor
             end
-        end
-        if kb.isDown('right') then
+        elseif kb.isDown('right') then
             if self.onfloor then 
                 if x_floor ~= 0 then
                     self.velx = FLOOR_SPEED * x_floor
@@ -162,20 +165,34 @@ function makeplayer(cx, cy)
                 self.velx = self.velx + dt * AIR_ACCEL * x_floor
                 self.vely = self.vely + dt * AIR_ACCEL * y_floor
             end
+        else
+            if self.onfloor then
+                if x_floor ~= 0 then
+                    self.velx = 0
+                end
+                if y_floor ~= 0 then
+                    self.vely = 0
+                end
+            end
         end
     end
 
     return p
 end
 
-player = makeplayer(2.5, 3.5)
+player = makeplayer(1.5, 1.5)
 
 o1 = rigidbody(3.5, 1.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, DOWN)
 o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
 o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
 
+<<<<<<< HEAD
 objects = {player}
 --objects = {player, o1, o2, o3}
+=======
+--objects = {player}
+objects = {player}
+>>>>>>> 6d74b3981a31b7115821866fab8df71397a75d8d
 
 function collide(r1, r2)
     if (r1.rigid and r2.rigid) then
