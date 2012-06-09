@@ -316,6 +316,7 @@ function DefaultField()
         end
         
         for k,o in pairs(cell.objects) do
+            print("foundobject")
             drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
         end
     end
@@ -397,7 +398,7 @@ function DefaultField()
     end
     
     if not markerStar then
-        markerStar = object(-1, -1, CELLSIZE/2, CELLSIZE/2, "star.png", MARKER_PRIO)
+        markerStar = object(-1, -1, 1/2, 1/2, "star.png", MARKER_PRIO)
         objects[#objects+1] = markerStar
     end
     
@@ -421,6 +422,10 @@ function DefaultField()
         -- print star over selected image
         markerStar.cx = -1
         markerStar.cy = -1
+    end
+    
+    function field:export(io)
+        
     end
     
     function field:shade()
@@ -553,8 +558,6 @@ end
 cx       = 500
 cy       = 500
 cellSize = 128
-
-objects = {}
 
 function fieldInit()
     
