@@ -1,9 +1,11 @@
 require 'field'
+require 'object'
 
 editor = {
-    ox = 0, oy = 0, -- offsets
-    selectx = 0, selecty = 0,
-    types = {"NONE.png", "goal.png"},
+    ox = 0, oy = 0,            -- offsets
+    selectx = 0, selecty = 0,  -- selected field
+    sobject = nil, dx = 0, dy = 0, -- selected object
+    cell_types = {"NONE.png", "goal.png"},
 }
 
 editor.INC = 5.0
@@ -48,10 +50,15 @@ function editor:keyboard(key)
     elseif (key == self.keys.WDOWN) then
         field:get(self.selectx, self.selecty + 1).colTop = not field:get(self.selectx, self.selecty + 1).colTop
     elseif (key == self.keys.CYCLE_CELL) then
-        local cur = table.find(self.types, field:get(self.selectx, self.selecty).background)
-        local next = self.types[cur % #self.types + 1]
+        local cur = table.find(self.cell_types, field:get(self.selectx, self.selecty).background)
+        local next = self.cell_types[cur % #self.cell_types + 1]
         field:get(self.selectx, self.selecty).background = next
     end
+end
+
+-- Mouse position to field position
+function editor:mouseToField(x, y)
+    return -self.ox + x / CELLSIZE, -self.oy + y / CELLSIZE
 end
 
 -- Get self.selected cell
@@ -61,13 +68,39 @@ function editor:getcell(x, y)
     return cx, cy
 end
 
--- self.select field
-function editor:mouse(x, y, button)
+-- Select objects and fields
+function editor:mousePressed(x, y, button)
+    local mx, my = self:mouseToField(x, y)
+
     if button == "l" then
+        -- Did we select an object?
+        for i, o in pairs(objects) do
+            if (math.abs(mx - o.cx) < o.xrad and math.abs(my - o.cy) < o.yrad) then
+                print("FOUND", o.img)
+                self.sobject = o
+                self.dx = o.cx - mx
+                self.dy = o.cy - my
+                return
+            end
+        end
+    
         --print(self:getcell(x, y))
         self.selectx, self.selecty = self:getcell(x, y)
     end
 end
+
+-- Move object
+function editor:mouseMoved(x, y)
+    print("Move")
+    if (self.sobject) then
+        self.sobject.cx = mx + self.dx
+        self.sobject.cy = my + self.dy
+    end
+end 
+
+function editor:mouseReleased(x, y, button)
+    self.sobject = nil
+end 
 
 -- Draw fields
 function editor:shade()

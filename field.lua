@@ -10,11 +10,8 @@ WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
 PRIO_BACK =   10
 PRIO_WALL =  300
+MARKER_PRIO = 900
 SIGHT_RANGE = 4
-
-WINNINGX = 2
-WINNINGY = 2
-WON = false
 
 function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
@@ -111,8 +108,8 @@ cellCount = 0
 function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
-    cell.colTop    = false
-    cell.colLeft   = false
+    cell.colTop    = true
+    cell.colLeft   = true
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
@@ -389,12 +386,19 @@ function DefaultField()
         end
         
         for k,e in pairs(objects) do
+            
             local x = math.floor(e.cx)
             local y = math.floor(e.cy)
             
             local map = self:get(x,y).objects;
+            --print("x:"..x..",y="..y)
             map[#map+1] = e;
         end
+    end
+    
+    if not markerStar then
+        markerStar = object(-1, -1, CELLSIZE/2, CELLSIZE/2, "star.png", MARKER_PRIO)
+        objects[#objects+1] = markerStar
     end
     
     function field:shadeEditor(offx, offy,hlx,hly)
@@ -404,6 +408,9 @@ function DefaultField()
         ymin = math.floor(math.max(1         , (-offy-WALLSIZE)     / CELLSIZE))
         ymax = math.floor(math.min(self.height, (RESY-offy-WALLSIZE) / CELLSIZE))
     
+        markerStar.cx = hlx + 0.5
+        markerStar.cy = hly + 0.5
+        
         self:collectObjects();
         for y = ymin,ymax do
             for x = xmin,xmax do
@@ -412,6 +419,8 @@ function DefaultField()
         end
         
         -- print star over selected image
+        markerStar.cx = -1
+        markerStar.cy = -1
     end
     
     function field:shade()
@@ -435,10 +444,7 @@ function DefaultField()
         --drawTileInCell(2*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",UP,    RIGHT,255,1)
         --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
         --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
-        
---        field:shadeEditor(-200, -200)
---        if true then return end
-        
+                
         self:collectObjects();
         
         local px = RESX / 2;
@@ -545,7 +551,7 @@ cx       = 500
 cy       = 500
 cellSize = 128
 
-objects = {}
+--objects = {}
 
 function fieldInit()
     
@@ -573,7 +579,7 @@ function fieldInit()
     field:get(3,3).colTop = true
     field:get(4,3).colTop = true
     field:get(5,3).colTop = true
-    field:get(WINNINGX,WINNINGY).background = "goal.png"
+    --field:get(WINNINGX,WINNINGY).background = "goal.png"
 
     if testfield == 1 then
         player.cx = 2.5
@@ -610,9 +616,4 @@ function fieldInit()
         field:openPortal(2,6,5,5,TOP,RIGHT,BOTTOM,RIGHT)
         field:openPortal(4,2,7,3,BOTTOM,RIGHT,TOP,RIGHT)
     end
-    
-    --field:get(3,3).colLeft = false
-    --field:get(7,6).colLeft = false
-    
-    --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
 end

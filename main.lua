@@ -92,11 +92,20 @@ end
 
 function love.mousepressed(x, y, button)
     if mode == MODE.EDITOR then
-        editor:mouse(x, y, button)
+        editor:mousePressed(x, y, button)
     end
 end
 
 function love.mousereleased(x, y, button)
+    if mode == MODE.EDITOR then
+        editor:mouseReleased(x, y, button)
+    end
+end
+
+function love.mousemove(x, y)
+    if mode == MODE.EDITOR then
+        editor:mouseMoved(x, y)
+    end
 end
 
 function love.keypressed(key, unicode)
