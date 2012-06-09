@@ -38,15 +38,11 @@ function love.draw()
     --gr.print("Hello World", 400, 300)
     --gr.draw(ps, 100, 100)
    
-    render:add(textures["particle.png"], 90, 90, -1, 255, 1, 1, math.rad(45))
-    render:add(textures["particle2.png"], 90, 90, -1, 255, 1, 1,
-    math.rad(45))
-    render:add(textures["particle.png"], 90, 90, 1, 20, 1, 1)
+    render:add(textures["particle.png"], 90, 90, -1, 255, -1, 1)
+    render:add(textures["particle.png"], 90, 90, -1, 255, -1, 1, math.rad(45))
+    --render:add(textures["particle.png"], 90, 90, -1, 255, 1, 1)
     render:add(textures["particle.png"], 100, 100, 0, 150, 1, 1)
     render:add(textures["particle.png"], 110, 110, 1, 255, 1, 1)
-    render:add(textures["particle.png"], 90, 90, 1, 200, 110, 120)
-    render:add(textures["particle.png"], 100, 100, 0, 150)
-    render:add(textures["particle.png"], 110, 110, 1, 255)
     for i,v in pairs(objects) do
         v:render()
     end
