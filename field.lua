@@ -6,6 +6,68 @@ LEFT  =  2
 RIGHT = -2
 
 CELLSIZE = 128
+WALLSIZE =  16
+PRIO_BACK = 10
+PRIO_WALL =  9
+SIGHT_RANGE = 5
+
+function transformOffset(x,y,downdir,rightdir)
+    if(downdir == DOWN) then
+        x = rightdir == RIGHT and x or 1 - x
+    elseif(downdir == UP) then
+        y = 1 - y
+        x = rightdir == RIGHT and x or 1 - x
+    elseif(downdir == RIGHT) then
+        if (rightdir == UP) then
+            x, y = 1 - y, x
+        else
+            x, y = y, x
+        end
+    else
+        assert(downdir == LEFT)
+        
+        if(rightdir == DOWN) then
+            x, y = y, 1 - x
+        else
+            x, y = 1 - y, 1 - x
+        end
+    end
+    return x,y
+end
+
+function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio)
+    local dimx = xmax - xmin
+    local dimy = ymax - ymin
+    xmin,ymin = transformOffset(xmin,ymin,downdir,rightdir)
+    xmax,ymax = transformOffset(xmax,ymax,downdir,rightdir)
+    
+    --Now I have the actual screen position the top left corner of the image is mapped to
+    local mirrored = nextdir(downdir) == rightdir
+    
+    if (mirrored) then
+        dimx = -dimx
+    end
+
+    physminx = cellx + math.min(xmin,xmax)
+    physminy = celly + math.min(ymin,ymax)
+    
+    local angle
+    if (downdir == DOWN) then
+        angle = 0
+    elseif (downdir == UP) then
+        angle = math.pi
+    else
+        if (downdir == RIGHT) then
+            angle = math.pi * 3 / 2
+        else
+            angle = math.pi / 2
+        end
+    end
+    
+    render:add(textures[img], physminx, physminy, zprio, brightness, dimx, dimy, angle)
+end
+
+cellCount = 0
 
 function DefaultCell()
     local cell = {}
@@ -16,9 +78,21 @@ function DefaultCell()
     cell.colLeft = false;
     cell.portals = {};
     cell.objects = {};
+    cellCount = cellCount + 1
+    cell.counter = cellCount
     
-    function cell:shade(xmin,ymin,updir)
-        render:add(textures[cell.background], xmin, ymin, 1, 255)
+    
+    function cell:shade(xmin,ymin,downdir,rightdir,brightness)
+        drawTileInCell(xmin,ymin,0,0,1,1,self.background,downdir,rightdir,brightness,PRIO_BACK)
+        local wallPerc = WALLSIZE / CELLSIZE
+        
+        --Hack to have well ordered walls
+        drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,1+wallPerc,  wallPerc, self.topImg,  downdir,rightdir, brightness, PRIO_WALL + cell.counter / 1000)
+        drawTileInCell(xmin,ymin,-wallPerc,-wallPerc,  wallPerc,1+wallPerc, self.leftImg, downdir,rightdir, brightness, PRIO_WALL + (cell.counter + 0.5) / 1000)
+        
+        for k,o in cell.objects do
+            drawTileInCell(xmin,ymin, o.cx - o.xrad, o.cy - o.yrad, o.cx + o.xrad, o.cy + o.yrad, o.img, downdir,rightdir, brightness, o.z)
+        end
     end
     
     return cell;
@@ -62,6 +136,19 @@ function dxytodir(dx,dy)
     end
 end
 
+function nextdir(dir)
+    if (dir == DOWN) then
+        return RIGHT
+    elseif(dir == RIGHT) then
+        return UP
+    elseif(dir == UP) then
+        return LEFT
+    else
+        assert(dir == LEFT)
+        return DOWN
+    end
+end
+
 function DefaultField()
     local field = {};
     field.width  = 64;
@@ -79,7 +166,7 @@ function DefaultField()
     
     for i = 1,field.height do
         field._cells[i] = defRow();
-    end;
+    end
     
     function field:get(x,y)
         if (x <= 0 or x > self.width or y <= 0 or y > self.height) then
@@ -136,8 +223,8 @@ function DefaultField()
     end;
     
     function field:collectObjects()
-        for i in 1,width do
-            for j in 1,height do
+        for i = 1,self.width do
+            for j = 1,self.height do
                 self:get(i,j).objects = {}
             end
         end
@@ -152,23 +239,72 @@ function DefaultField()
     end
     
     function field:shade()
-        --[[ local px = RESX / 2;
+        self:collectObjects();
+    
+        local px = RESX / 2;
         local py = RESY / 2;
+        local cellx = math.floor(player.cx)
+        local celly = math.floor(player.cy)
         
         px = px - (player.cx % 1) * CELLSIZE
         py = py - (player.cy % 1) * CELLSIZE
         
+        function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir)
+            local node = {}
+            node.logx     = logx
+            node.logy     = logy
+            node.screenx   = screenx
+            node.screeny   = screeny
+            node.stepsleft = stepsleft
+            node.downdir   = downdir
+            node.rightdir  = rightdir
+            return node
+        end
         
+        local toDo = {}
+        local done = {}
+        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, nextdir(player.grav))
+        local next   = 0
+        local writer = 1
         
-        
-        self:collectObjects();
-        
-        RESX, RESY
-        x, y = math.floor(px), math.floor(py)
-        
-        
-        field:get(1,1):shade(cx,cy,RIGHT)]]
-        
+        while(toDo[i]) do
+            node = toDo[i]
+            next = next + 1
+            
+            local continue = true
+            
+            if(not done[screenx]) then
+                done[screenx] = { [node.screeny] = true }
+            elseif (done[screenx][screeny]) then
+                continue = false
+            else
+                done[screenx][screeny] = true
+            end
+            
+            if (continue) then
+                self:get(node.logx,node.logy):shade(px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, node.downdir, node.rightdir,255 * stepsleft / SIGHT_RANGE)
+                
+                -- insert surrounding elements into toDo queue
+                if(node.stepsleft > 1) then
+                    local newx;
+                    local newy;
+                    local newdir;
+                    local newother;
+                    newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.rightdir,node.downdir)
+                    toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - 1, newother, -newdir)
+                    writer = writer + 1
+                    newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.rightdir,node.downdir)
+                    toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - 1, newother,  newdir)
+                    writer = writer + 1
+                    newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.downdir, node.rightdir)
+                    toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, newdir,  newother)
+                    writer = writer + 1
+                    newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.downdir, node.rightdir)
+                    toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, -newdir,  newother)
+                    writer = writer + 1
+                end
+            end
+        end
     end
     
     return field;

@@ -2,6 +2,7 @@ require 'shortcut'
 require 'render'
 require 'textures'
 require 'vector'
+require 'field'
 
 RESX=800
 RESY=600
@@ -10,7 +11,7 @@ function love.load()
     -- print("Test")
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
     loadTextures()
-    --fieldInit()
+    fieldInit()
     isPaused = false
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
@@ -38,13 +39,12 @@ function love.draw()
     --gr.draw(ps, 100, 100)
    
     render:add(textures["particle.png"], 90, 90, -1, 255, 1, 1, math.rad(45))
-    render:add(textures["particle2.png"], 90, 90, -1, 255, 1, 1,
-    math.rad(45))
+    --render:add(textures["particle2.png"], 90, 90, -1, 255, 1, 1, math.rad(45))
     render:add(textures["particle.png"], 90, 90, 1, 20, 1, 1)
     render:add(textures["particle.png"], 100, 100, 0, 150, 1, 1)
     render:add(textures["particle.png"], 110, 110, 1, 255, 1, 1)
     --render:add(ps, 200, 200, 0, 10)
-    --field:shade()
+    field:shade()
     render:draw()
 end
 
