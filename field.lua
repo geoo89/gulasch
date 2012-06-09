@@ -24,6 +24,23 @@ function DefaultCell()
     return cell;
 end
 
+function TWCell()
+    local cell = {}
+    cell.background = "NONE.png";
+    cell.topImg     = "NOBAR_H.png";
+    cell.leftImg    = "NOBAR_V.png";
+    cell.colTop = true;
+    cell.colLeft = true;
+    cell.portals = {};
+    cell.objects = {};
+    
+    function cell:shade(xmin,ymin,updir)
+        render:add(textures[cell.background], xmin, ymin, 1, 255)
+    end
+    
+    return cell;
+end
+
 function Portal()
     local portal = {}
     --[[properties:
@@ -87,6 +104,12 @@ function DefaultField()
         end
         return self._cells[y][x];
     end
+
+    function field:setTW(x,y)
+        if (not (x <= 0 or x > self.width or y <= 0 or y > self.height)) then
+            self._cells[y][x] = TWCell();
+        end
+    end
     
     function field:openPortal(x1,y1,x2,y2, side1, up1, side2, up2)
         local portal1   = Portal();
@@ -119,7 +142,7 @@ function DefaultField()
         local thisCell = self:get(x,y)
         
         if (not thisCell.portals[dir]) then
-            print("nope");
+            --print("nope");
             return x+dx,y+dy,dx,dy
         end
         
@@ -182,7 +205,10 @@ objects = {}
 
 function fieldInit()
     field = DefaultField()
-    field:openPortal(1,1,4,3,RIGHT,UP,LEFT,UP)
-    print(field:go(1,1,RIGHT,UP,LEFT,UP))
-    print("lol")
+    field:setTW(2,4)
+    field:setTW(3,4)
+    field:setTW(4,2)
+    --field:openPortal(1,1,4,3,RIGHT,UP,LEFT,UP)
+    --print(field:go(1,1,RIGHT,UP,LEFT,UP))
+    --print("lol")
 end

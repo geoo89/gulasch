@@ -39,9 +39,13 @@ function love.draw()
     --gr.print("Hello World", 400, 300)
     --gr.draw(ps, 100, 100)
    
-    render:add(textures["particle.png"], 90, 90, 1, 200, 110, 120)
-    render:add(textures["particle.png"], 100, 100, 0, 150)
-    render:add(textures["particle.png"], 110, 110, 1, 255)
+    for y=0,1023,128 do
+        for x=0,767,128 do
+            local cell = field:get(x/128+1, y/128+1)
+            if cell.colTop then render:add(textures["twcell.png"], x, y, 0, 255)
+            else render:add(textures["cell.png"], x, y, 0, 255) end
+        end
+    end
     for i,v in pairs(objects) do
         v:render()
     end
@@ -62,6 +66,11 @@ function love.update(dt)
     
     objects = map(objects, function(o) return o:update(dt) end)
     
+    for i1,v1 in pairs(objects) do
+        collidewall(v1)
+    end
+    --collidewall(player)
+
     for i1,v1 in pairs(objects) do
         for i2,v2 in pairs(objects) do
             if (i1 < i2) then collide(v1,v2) end
