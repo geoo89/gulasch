@@ -7,7 +7,7 @@ RIGHT = -2
 
 CELLSIZE = 128
 
-WALLPERC = 0.0625
+WALLPERC = 8/128
 
 function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
@@ -287,9 +287,11 @@ objects = {}
 function fieldInit()
     field = DefaultField()
     field:setTW(2,4)
+    field:setTW(2,3)
+    field:setTW(3,3)
     --field:setTW(3,4)
     --field:setTW(4,2)
-    field:openPortal(2,2,4,3,RIGHT,UP,DOWN,RIGHT)
+    --field:openPortal(2,2,4,3,RIGHT,UP,DOWN,RIGHT)
     --print(field:go(1,1,RIGHT,UP,LEFT,UP))
     --print("lol")
 end
