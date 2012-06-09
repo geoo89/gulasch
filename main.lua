@@ -15,7 +15,7 @@ function love.load()
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
     loadTextures()
     fieldInit()
-    isPaused = true
+    --isPaused = true
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
     ps:setEmissionRate(100)
@@ -57,6 +57,8 @@ function love.update(dt)
     if isPaused then
         return
     end
+    
+    if (dt > 0.05) then dt = 0.05 end
     
     ps:update(dt)
     

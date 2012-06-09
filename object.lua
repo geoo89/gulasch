@@ -4,6 +4,7 @@ JUMP_STRENGTH = 4
 GRAV_STRENGTH = 1
 AIR_ACCEL = 1
 FLOOR_SPEED = 1
+VEL_CAP = 4
 
 function object(cx, cy, xrad, yrad, img, z)
     local o = {}
@@ -37,6 +38,11 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         o.velx = o.velx + GRAV_STRENGTH * ax * dt
         o.vely = o.vely + GRAV_STRENGTH * ay * dt
         
+        if (o.velx < -VEL_CAP) then o.velx = -VEL_CAP end
+        if (o.velx > VEL_CAP) then o.velx = VEL_CAP end
+        if (o.vely < -VEL_CAP) then o.vely = -VEL_CAP end
+        if (o.vely > VEL_CAP) then o.vely = VEL_CAP end
+        
         local intx = math.floor(o.cx)
         local inty = math.floor(o.cy)
 
@@ -51,13 +57,14 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local inty2 = math.floor(o.cy)
         local fx = o.cx % 1
         local fy = o.cy % 1
-
         
         local dx = intx2 - intx
         local dy = inty2 - inty
         
         -- TODO: FIX IF BOTH VALUES ARE NONZERO
-        assert(dx == 0 or dy == 0, "You can't move from one cell to a diagonally adjacent one in one frame")
+        -- cheap fix, doesn't work in a rare cases when passing through two adjacent portals
+        -- passing two cells diagonally at once
+        if dx ~= 0 and dy ~= 0 then dy = 0 end
         
         if dx==0 and dy == 0 then return self end
         
@@ -74,8 +81,6 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
         print(dir, rgtdir, dwndir)
         if (rgtdir ~= nextdir(dwndir)) then o.mirrored = not o.mirrored end
-        
-        print("mirrored", self.mirrored)
         
         fx,fy = transformOffset(fx,fy,dwndir,rgtdir)
         print(fx,fy)
