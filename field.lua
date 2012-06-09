@@ -386,7 +386,7 @@ function DefaultField()
         local toDo = {}
         local done = {}
         
-        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, nextdir(player.grav))
+        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, player.mirrored and -nextdir(player.grav) or nextdir(player.grav))
         local next   = 0
         local writer = 1
         
@@ -479,11 +479,11 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    --field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
-    field:get(2,3).colLeft = false
-    field:get(2,3).colTop = false
+    field:openPortal(2,2,6,6,RIGHT,UP,RIGHT,UP)
+    field:get(3,3).colLeft = false
+    field:get(7,6).colLeft = false
     
-    field:openPortal(2,2,1,3,RIGHT,UP,LEFT,DOWN)
+    --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
     
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
 end
