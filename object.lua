@@ -1,7 +1,7 @@
 require 'field'
 
 JUMP_STRENGTH = 4
-GRAV_STRENGTH = 2
+GRAV_STRENGTH = 1
 AIR_ACCEL = 1
 FLOOR_SPEED = 1
 
@@ -37,8 +37,44 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         o.vely = o.vely + GRAV_STRENGTH * ay * dt
         
         -- TODO: CHECK HERE IF WE TRAVERSE THROUGH A PORTAL
+        local intx = math.floor(o.cx)
+        local inty = math.floor(o.cy)
+        
         o.cx = o.cx + o.velx * dt
         o.cy = o.cy + o.vely * dt
+        
+        local intx2 = math.floor(o.cx)
+        local inty2 = math.floor(o.cy)
+        local fx = o.cx % 1
+        local fy = o.cy % 1
+        
+        local dx = intx2 - intx
+        local dy = inty2 - inty
+        
+        if dx==0 and dy == 0 then return self end
+        
+        print(fx,fy)
+        
+        local dir = dxytodir(dx,dy)
+        local wurst = 0
+        local rgtdir
+        local dwndir
+        
+        newx, newy, wurst, o.grav = field:go(intx, inty, dir, o.grav)
+        newx, newy, wurst, rgtdir = field:go(intx, inty, dir, RIGHT)
+        newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
+        print(dir, rgtdir, dwndir)
+        
+        fx,fy = transformOffset(fx,fy,dwndir,rgtdir)
+        print(fx,fy)
+        o.cx = newx + fx
+        o.cy = newy + fy
+        
+        local vx = o.velx
+        local vy = o.vely
+        vx,vy = transformOffset(vx+0.5,vy+0.5,dwndir,rgtdir)
+        o.velx = vx - 0.5
+        o.vely = vy - 0.5
         
         return self
     end
@@ -87,7 +123,8 @@ o1 = rigidbody(3.5, 1.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, DOWN)
 o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
 o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
 
-objects = {player, o1, o2, o3}
+objects = {player}
+--objects = {player, o1, o2, o3}
 
 function collide(r1, r2)
     if (r1.rigid and r2.rigid) then
@@ -134,12 +171,12 @@ function collidecell(r, nx, ny)
     local curcell = wurstfield:get(nx,ny)
     
     if curcell.colTop == true then
-        local wall = rigidbody(nx+0.5, ny, 0.5, 0.03125, "crate.png", 0, 0, 0, 99999999, DOWN)
+        local wall = rigidbody(nx+0.5, ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
         collide(r,wall)
     end
 
     if curcell.colLeft == true then
-        local wall = rigidbody(nx, ny+0.5, 0.03125, 0.5, "crate.png", 0, 0, 0, 99999999, DOWN)
+        local wall = rigidbody(nx, ny+0.5, WALLPERC, 0.5+WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
         collide(r,wall)
     end
 end

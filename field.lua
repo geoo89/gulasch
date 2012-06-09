@@ -7,6 +7,52 @@ RIGHT = -2
 
 CELLSIZE = 128
 
+WALLPERC = 0.0625
+
+function transformOffset(x,y,downdir,rightdir)
+    assertValidDir(rightdir)
+    assertValidDir(downdir)
+    assert(downdir ~= rightdir and downdir ~= -rightdir)
+   
+    if(downdir == DOWN) then
+        x = rightdir == RIGHT and x or 1 - x
+    elseif(downdir == UP) then
+        y = 1 - y
+        x = rightdir == RIGHT and x or 1 - x
+    elseif(downdir == RIGHT) then
+        if (rightdir == UP) then
+            x, y = y, 1-x
+        else
+            x, y = y, x
+        end
+    else
+        assert(downdir == LEFT)
+       
+        if(rightdir == DOWN) then
+            x, y = 1-y, x
+        else
+            x, y = 1 - y, 1 - x
+        end
+    end
+    return x,y
+end
+
+function rotatetodown(d,a2,a3,a4)
+    assertValidDir(d)
+    assertValidDir(a2)
+    assertValidDir(a3)
+    assertValidDir(a4)
+
+    while d ~= DOWN do
+        d = nextdir(d)
+        a2 = nextdir(a2)
+        a3 = nextdir(a3)
+        a4 = nextdir(a4)
+    end
+    
+    return d, a2,a3,a4
+end
+
 function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
@@ -51,6 +97,10 @@ function Portal()
     return portal;
 end
 
+function assertValidDir(dir)
+    assert(dir == LEFT or dir == RIGHT or dir == UP or dir == DOWN, "Invalid direction: "..dir)
+end
+
 function dirtodxy(dir)
     if (dir == LEFT) then
         return -1,0
@@ -76,6 +126,19 @@ function dxytodir(dx,dy)
         return TOP
     else
         assert(false, "dxyToDir: SHITTY INPUT");
+    end
+end
+
+function nextdir(dir)
+    assertValidDir(dir)
+    if (dir == DOWN) then
+        return RIGHT
+    elseif(dir == RIGHT) then
+        return UP
+    elseif(dir == UP) then
+        return LEFT
+    else
+        return DOWN
     end
 end
 
@@ -136,27 +199,45 @@ function DefaultField()
         self:get(x2,y2).portals[side2] = portal2;
     end
     
-    function field:go(x,y,dir,dirup)
-        local dx, dy
-        dx, dy = dirtodxy(dir)
-        local thisCell = self:get(x,y)
-        
-        if (not thisCell.portals[dir]) then
-            --print("nope");
-            return x+dx,y+dy,dx,dy
+        function field:go(x,y,dir,dirup)
+            assertValidDir(dir)
+           
+            if(dirup) then
+                assertValidDir(dirup)
+            else
+                dirup = nextdir(dir)
+            end
+           
+            local dx, dy
+            dx, dy = dirtodxy(dir)
+            local thisCell = self:get(x,y)
+           
+            if (not thisCell.portals[dir]) then
+                return x+dx,y+dy,dir,dirup
+            end
+           
+            --there is a portal
+            local portal = thisCell.portals[dir]
+            local newx = portal.xout
+            local newy = portal.yout
+            local otherCell = self:get(newx,newy)
+           
+            local newdir   = -portal.sideout
+            local newdirup;
+            if(dirup == dir) then newdirup = newdir
+            elseif(dirup == -dir) then newdirup = -newdir
+            else
+                newdirup = portal.upin == dirup and portal.upout or -portal.upout
+            end
+           
+            assertValidDir(newdir)
+            assertValidDir(newdirup)
+           
+            return  newx,
+                    newy,
+                    newdir,
+                    newdirup;
         end
-        
-        --there is a portal
-        local portal = thisCell.portals[dir]
-        local newx = portal.xout
-        local newy = portal.yout
-        local otherCell = self:get(newx,newy)
-        
-        return newx,
-                newy,
-                -portal.sideout,
-                portal.upin == dirup and portal.upout or -portal.upout;
-    end;
     
     function field:collectObjects()
         for i in 1,width do
@@ -206,9 +287,9 @@ objects = {}
 function fieldInit()
     field = DefaultField()
     field:setTW(2,4)
-    field:setTW(3,4)
-    field:setTW(4,2)
-    --field:openPortal(1,1,4,3,RIGHT,UP,LEFT,UP)
+    --field:setTW(3,4)
+    --field:setTW(4,2)
+    field:openPortal(2,2,4,3,RIGHT,UP,DOWN,RIGHT)
     --print(field:go(1,1,RIGHT,UP,LEFT,UP))
     --print("lol")
 end
