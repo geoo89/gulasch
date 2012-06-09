@@ -10,6 +10,7 @@ WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
 PRIO_BACK =   10
 PRIO_WALL =  300
+MARKER_PRIO = 900
 SIGHT_RANGE = 4
 
 function transformOffset(x,y,downdir,rightdir)
@@ -385,12 +386,19 @@ function DefaultField()
         end
         
         for k,e in pairs(objects) do
+            
             local x = math.floor(e.cx)
             local y = math.floor(e.cy)
             
             local map = self:get(x,y).objects;
+            print("x:"..x..",y="..y)
             map[#map+1] = e;
         end
+    end
+    
+    if not markerStar then
+        markerStar = object(-1, -1, CELLSIZE/2, CELLSIZE/2, "star.png", MARKER_PRIO)
+        objects[#objects+1] = markerStar
     end
     
     function field:shadeEditor(offx, offy,hlx,hly)
@@ -400,6 +408,9 @@ function DefaultField()
         ymin = math.floor(math.max(1         , (-offy-WALLSIZE)     / CELLSIZE))
         ymax = math.floor(math.min(self.height, (RESY-offy-WALLSIZE) / CELLSIZE))
     
+        markerStar.cx = hlx + 0.5
+        markerStar.cy = hly + 0.5
+        
         self:collectObjects();
         for y = ymin,ymax do
             for x = xmin,xmax do
@@ -408,6 +419,8 @@ function DefaultField()
         end
         
         -- print star over selected image
+        markerStar.cx = -1
+        markerStar.cy = -1
     end
     
     function field:shade()
@@ -432,7 +445,7 @@ function DefaultField()
         --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
         --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
         
-        field:shadeEditor(-200, -200)
+        field:shadeEditor(-200, -200, 3, 3)
         if true then return end
         
         self:collectObjects();
