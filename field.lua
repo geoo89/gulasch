@@ -569,7 +569,7 @@ function DefaultField(w,h,startWithWalls)
     end
     
     function field:export(filename)
-        io.output = filename
+        io.output(io.open(filename,"w"))
         io.write(self.width, " ", self.height, "\n")
         
         -- print list of non-walls
