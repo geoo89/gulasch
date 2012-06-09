@@ -53,6 +53,8 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local dy = inty2 - inty
         
         -- TODO: FIX IF BOTH VALUES ARE NONZERO
+        assert(dx == 0 or dy == 0, "You can't move from one cell to a diagonally adjacent one in one frame")
+        
         if dx==0 and dy == 0 then return self end
         
         print("dx",dx,dy)
@@ -182,11 +184,11 @@ end
 
 player = makeplayer(1.5, 1.5)
 
-o1 = rigidbody(3.5, 1.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, DOWN)
+o1 = rigidbody(3.5, 2.5, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN)
 o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
 o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
 
-objects = {player}
+objects = {player, o1}
 
 function collide(r1, r2)
     if (r1.rigid and r2.rigid) then
