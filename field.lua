@@ -492,6 +492,7 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
+
     field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
     field:get(2,2).colTop = true
     field:get(3,2).colTop = true
