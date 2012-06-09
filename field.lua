@@ -383,8 +383,6 @@ function DefaultField()
         local toDo = {}
         local done = {}
         
-        player.mirrored = true
-        
         local playerright = player.mirrored and -nextdir(player.grav) or nextdir(player.grav)
         local ox
         local oy
@@ -483,11 +481,17 @@ cellSize = 128
 objects = {}
 
 function fieldInit()
+    player.cx = 2.5
+    player.cy = 2.5
+    
     field = DefaultField()
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    field:openPortal(2,3,6,6,RIGHT,UP,RIGHT,UP)
+    field:openPortal(2,2,2,2,RIGHT,UP,UP,RIGHT)
+    field:get(2,2).colTop = false
+    field:get(3,2).colLeft = false
+    
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
     

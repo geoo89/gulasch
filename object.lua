@@ -186,13 +186,7 @@ o1 = rigidbody(3.5, 1.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, DOWN)
 o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
 o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
 
-<<<<<<< HEAD
 objects = {player}
---objects = {player, o1, o2, o3}
-=======
---objects = {player}
-objects = {player}
->>>>>>> 6d74b3981a31b7115821866fab8df71397a75d8d
 
 function collide(r1, r2)
     if (r1.rigid and r2.rigid) then
