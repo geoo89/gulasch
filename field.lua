@@ -71,8 +71,8 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
         if (angle == 3) then
             physminy = physminy + dimx
         elseif (angle == 2) then
-            physminx = physminx + dimy
-            physminy = physminy + dimx
+            physminx = physminx + dimx
+            physminy = physminy + dimy
         elseif (angle == 1) then
             physminx = physminx + dimy
         end
@@ -333,6 +333,17 @@ function DefaultField()
     end
     
     function field:shade()
+        local OFFSET = CELLSIZE + 40
+        --field:shadeCell(5,5,0*OFFSET,OFFSET,DOWN,RIGHT,255)
+        --field:shadeCell(5,5,1*OFFSET,OFFSET,RIGHT,UP,255)
+        --field:shadeCell(5,5,2*OFFSET,OFFSET,UP,LEFT,255)
+        --field:shadeCell(5,5,3*OFFSET,OFFSET,LEFT,DOWN,255)
+        --
+        --field:shadeCell(5,5,0*OFFSET,2*OFFSET,RIGHT,DOWN, 255)
+        --field:shadeCell(5,5,1*OFFSET,2*OFFSET,UP,   RIGHT,255)
+        --field:shadeCell(5,5,2*OFFSET,2*OFFSET,LEFT, UP,   255)
+        --field:shadeCell(5,5,3*OFFSET,2*OFFSET,DOWN, LEFT, 255)
+        
         --drawTileInCell(CELLSIZE,  CELLSIZE,  0,  0,1,1,"NONE.png",DOWN, RIGHT, 255,1)
         --drawTileInCell(2*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT,UP,    255,1)
         --drawTileInCell(3*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",UP,   LEFT,  255,1)
@@ -342,6 +353,8 @@ function DefaultField()
         --drawTileInCell(2*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",UP,    RIGHT,255,1)
         --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
         --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
+        
+        --if true then return end
         
         self:collectObjects();
         
@@ -467,8 +480,10 @@ function fieldInit()
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
     --field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
-    field:get(3,2).colLeft = false
-    --field:get(2,2).colLeft = false
+    field:get(2,3).colLeft = false
+    field:get(2,3).colTop = false
+    
+    field:openPortal(2,2,1,3,RIGHT,UP,LEFT,DOWN)
     
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
 end
