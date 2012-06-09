@@ -24,7 +24,7 @@ function transformOffset(x,y,downdir,rightdir)
         x = rightdir == RIGHT and x or 1 - x
     elseif(downdir == RIGHT) then
         if (rightdir == UP) then
-            x, y = 1 - y, x
+            x, y = y, 1 - x
         else
             x, y = y, x
         end
@@ -32,41 +32,61 @@ function transformOffset(x,y,downdir,rightdir)
         assert(downdir == LEFT)
         
         if(rightdir == DOWN) then
-            x, y = y, 1 - x
-        else
             x, y = 1 - y, 1 - x
+        else
+            x, y = 1 - y, x
         end
     end
     return x,y
 end
 
 function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio)
-    local dimx = xmax - xmin
-    local dimy = ymax - ymin
+    local dimx = (xmax - xmin) * CELLSIZE
+    local dimy = (ymax - ymin) * CELLSIZE
     xmin,ymin = transformOffset(xmin,ymin,downdir,rightdir)
     xmax,ymax = transformOffset(xmax,ymax,downdir,rightdir)
     
     --Now I have the actual screen position the top left corner of the image is mapped to
-    local mirrored = nextdir(downdir) == rightdir and 1 or -1
+    local sx = nextdir(downdir) == rightdir and 1 or -1
     
     physminx = cellx + CELLSIZE * math.min(xmin,xmax)
     physminy = celly + CELLSIZE * math.min(ymin,ymax)
     
-    local angle
+    local angle -- (* PI/2)
     if (downdir == DOWN) then
         angle = 0
     elseif (downdir == UP) then
-        angle = math.pi
+        angle = 2
+    elseif (downdir == RIGHT) then
+        angle = 3
     else
-        if (downdir == RIGHT) then
-            angle = math.pi * 3 / 2
-        else
-            angle = math.pi / 2
-        end
+        angle = 1
     end
     
-    print(img, " px", physminx, " py", physminy, " z", zprio, " br", brightness, " ", mirrored, " ", 1, " ang", angle)
-    render:add(textures[img], physminx, physminy, zprio, brightness, mirrored, 1, angle)
+    if sx == 1 then
+        if (angle == 3) then
+            physminy = physminy + dimx
+        elseif (angle == 2) then
+            physminx = physminx + dimy
+            physminy = physminy + dimx
+        elseif (angle == 1) then
+            physminx = physminx + dimy
+        end
+    else
+        if (angle == 2) then
+            physminy = physminy + dimy
+        elseif (angle == 1) then
+            physminy = physminy + dimx
+            physminx = physminx + dimy
+        elseif (angle == 0) then
+            physminx = physminx + dimx
+        end
+    end
+        
+    angle = angle * math.pi / 2;
+    
+    print(img, " px", physminx, " py", physminy, " z", zprio, " br", brightness, " ", sx, " ", 1, " ang", angle)
+    render:add(textures[img], physminx, physminy, zprio, brightness, sx, 1, angle)
 end
 
 cellCount = 0
@@ -301,16 +321,15 @@ function DefaultField()
     end
     
     function field:shade()
-        drawTileInCell(CELLSIZE,  CELLSIZE,  0,  0,1,1,"NONE.png",DOWN, RIGHT, 255,1)
-        drawTileInCell(2*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT,UP,    255,1)
-        drawTileInCell(3*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",UP,   LEFT,  255,1)
-        drawTileInCell(4*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",LEFT, DOWN,  255,1)
-        
-        drawTileInCell(CELLSIZE,  2*CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT, DOWN, 255,1)
+        --drawTileInCell(CELLSIZE,  CELLSIZE,  0,  0,1,1,"NONE.png",DOWN, RIGHT, 255,1)
+        --drawTileInCell(2*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT,UP,    255,1)
+        --drawTileInCell(3*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",UP,   LEFT,  255,1)
+        --drawTileInCell(4*CELLSIZE,CELLSIZE,  0,  0,1,1,"NONE.png",LEFT, DOWN,  255,1)
+        --
+        --drawTileInCell(CELLSIZE,  2*CELLSIZE,  0,  0,1,1,"NONE.png",RIGHT, DOWN, 255,1)
         --drawTileInCell(2*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",UP,    RIGHT,255,1)
         --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
         --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
-        if true then return end
         
         self:collectObjects();
         
@@ -363,7 +382,20 @@ function DefaultField()
             end
             
             if (continue) then
-                self:get(node.logx,node.logy):shade(px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, node.downdir, node.rightdir,255 * node.stepsleft / SIGHT_RANGE)
+                -- screen right is physical node.rightdir
+                -- screen down is physical node.downdir
+                -- where does the downarrow of the cell point?
+                local downarrow
+                local rightarrow
+                if (node.downdir == DOWN or node.downdir == UP) then
+                    downarrow = node.downdir
+                    rightarrow = node.rightdir
+                else
+                    downarrow  = node.rightdir == DOWN and RIGHT or LEFT
+                    rightarrow = node.downdir == RIGHT and DOWN  or UP
+                end
+                
+                self:get(node.logx,node.logy):shade(px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, downarrow, rightarrow,255 * node.stepsleft / SIGHT_RANGE)
                 
                 -- insert surrounding elements into toDo queue
                 if(node.stepsleft > 1) then
@@ -422,7 +454,7 @@ function fieldInit()
     --field:get(3,2).wallleft = false
     --field:get(3,2).walltop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
+    --field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
     
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
     print("lol")
