@@ -16,7 +16,7 @@ function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
     assertValidDir(downdir)
     assert(downdir ~= rightdir and downdir ~= -rightdir)
-    
+   
     if(downdir == DOWN) then
         x = rightdir == RIGHT and x or 1 - x
     elseif(downdir == UP) then
@@ -24,23 +24,27 @@ function transformOffset(x,y,downdir,rightdir)
         x = rightdir == RIGHT and x or 1 - x
     elseif(downdir == RIGHT) then
         if (rightdir == UP) then
-            x, y = y, 1 - x
+            x, y = y, 1-x
         else
             x, y = y, x
         end
     else
         assert(downdir == LEFT)
-        
+       
         if(rightdir == DOWN) then
-            x, y = 1 - y, 1 - x
+            x, y = 1-y, x
         else
-            x, y = 1 - y, x
+            x, y = 1 - y, 1 - x
         end
     end
     return x,y
 end
 
 function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio)
+    if not img or img == "" then
+        return
+    end
+    
     local dimx = (xmax - xmin) * CELLSIZE
     local dimy = (ymax - ymin) * CELLSIZE
     xmin,ymin = transformOffset(xmin,ymin,downdir,rightdir)
@@ -85,7 +89,7 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
         
     angle = angle * math.pi / 2;
     
-    print(img, " px", physminx, " py", physminy, " z", zprio, " br", brightness, " ", sx, " ", 1, " ang", angle)
+    --print(img, " px", physminx, " py", physminy, " z", zprio, " br", brightness, " ", sx, " ", 1, " ang", angle)
     render:add(textures[img], physminx, physminy, zprio, brightness, sx, 1, angle)
 end
 
@@ -94,12 +98,10 @@ cellCount = 0
 function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
-    cell.walltop    = true
-    cell.wallleft   = true
-    cell.topImg     = "NOBAR_H.png";
-    cell.leftImg    = "NOBAR_V.png";
-    cell.colTop = false;
-    cell.colLeft = false;
+    cell.colTop    = true
+    cell.colLeft   = true
+    cell.topImg     = "BAR_H.png";
+    cell.leftImg    = "BAR_V.png";
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
@@ -292,15 +294,15 @@ function DefaultField()
         end
         
         if (dir == TOP) then
-            return cell.walltop
+            return cell.colTop
         elseif (dir == LEFT) then
-            return cell.wallleft
+            return cell.colLeft
         elseif (dir == RIGHT) then
             if (cell.portals[RIGHT]) then return false end
-            return self:get(x+1,y).wallleft
+            return self:get(x+1,y).colLeft
         else
             if(cell.portals[DOWN]) then return false end
-            return self:get(x,y+1).walltop
+            return self:get(x,y+1).colTop
         end
     end
     
@@ -451,11 +453,10 @@ objects = {}
 
 function fieldInit()
     field = DefaultField()
-    --field:get(3,2).wallleft = false
-    --field:get(3,2).walltop = false
+    --field:get(3,2).colLeft = false
+    --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
     --field:openPortal(2,2,2,2,UP,LEFT,RIGHT,DOWN)
     
     print(field:go(1,1,RIGHT,UP,LEFT,UP))
-    print("lol")
 end
