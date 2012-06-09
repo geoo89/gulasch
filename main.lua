@@ -9,6 +9,7 @@ require 'object'
 RESX=800
 RESY=600
 
+
 function love.load()
     -- print("Test")
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
@@ -45,6 +46,9 @@ function love.draw()
     render:draw()
     
     gr.print(timer.getFPS(),10,10,0,1,1)
+    
+    gr.print("Move crate to goal",10,30,0,1,1)
+    if WON==true then gr.print("A winner is you!",30,50,0,1,1) end
 end
 
 cnt = 0

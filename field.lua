@@ -12,6 +12,10 @@ PRIO_BACK =   10
 PRIO_WALL =  300
 SIGHT_RANGE = 5
 
+WINNINGX = 4
+WINNINGY = 2
+WON = false
+
 function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
     assertValidDir(downdir)
@@ -40,10 +44,7 @@ function transformOffset(x,y,downdir,rightdir)
     return x,y
 end
 
-function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio, objgrav,objmirr)
-    objgrav = objgrav or DOWN
-    objmirr = objmirr or false
-
+function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio)
     if not img or img == "" then
         return
     end
@@ -55,7 +56,6 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     
     --Now I have the actual screen position the top left corner of the image is mapped to
     local sx = nextdir(downdir) == rightdir and 1 or -1
-    if(objmirr) then sx = -sx end
     
     physminx = cellx + CELLSIZE * math.min(xmin,xmax)
     physminy = celly + CELLSIZE * math.min(ymin,ymax)
@@ -69,11 +69,6 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
         angle = 3
     else
         angle = 1
-    end
-    
-    while(objgrav ~= DOWN) do
-        objgrav = nextdir(objgrav)
-        angle = (angle + 1) % 4
     end
     
     if sx == 1 then
@@ -107,8 +102,8 @@ cellCount = 0
 function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
-    cell.colTop    = true
-    cell.colLeft   = true
+    cell.colTop    = false
+    cell.colLeft   = false
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
@@ -163,21 +158,6 @@ function dxytodir(dx,dy)
     else
         assert(false, "dxyToDir: SHITTY INPUT");
     end
-end
-
-function invertPair(dirdown,dirright)
-    local downarrow
-    local rightarrow
-    
-    if (dirdown == DOWN or dirdown == UP) then
-        downarrow = dirdown
-        rightarrow = dirright
-    else
-        downarrow  = dirright == DOWN and RIGHT or LEFT
-        rightarrow = dirdown == RIGHT and DOWN  or UP
-    end
-    
-    return downarrow, rightarrow
 end
 
 function nextdir(dir)
@@ -315,7 +295,7 @@ function DefaultField()
         end
         
         for k,o in pairs(cell.objects) do
-            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
+            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z)
         end
     end
     
@@ -408,14 +388,9 @@ function DefaultField()
         local done = {}
         
         local playerright = player.mirrored and -nextdir(player.grav) or nextdir(player.grav)
-        
-        local downarrow
-        local rightarrow
-        downarrow, rightarrow = invertPair(player.grav, playerright)
-        
         local ox
         local oy
-        ox, oy = transformOffset(player.cx % 1, player.cy % 1, downarrow,rightarrow)
+        ox, oy = transformOffset(player.cx % 1, player.cy % 1, player.grav,playerright)
         
         px = px - ox * CELLSIZE
         py = py - oy * CELLSIZE
@@ -445,7 +420,15 @@ function DefaultField()
                 -- screen right is physical node.rightdir
                 -- screen down is physical node.downdir
                 -- where does the downarrow of the cell point?
-                downarrow, rightarrow = invertPair(node.downdir, node.rightdir)
+                local downarrow
+                local rightarrow
+                if (node.downdir == DOWN or node.downdir == UP) then
+                    downarrow = node.downdir
+                    rightarrow = node.rightdir
+                else
+                    downarrow  = node.rightdir == DOWN and RIGHT or LEFT
+                    rightarrow = node.downdir == RIGHT and DOWN  or UP
+                end
                 
                 self:shadeCell(node.logx, node.logy, px + node.screenx * CELLSIZE, py + node.screeny * CELLSIZE, downarrow, rightarrow,255 * node.stepsleft / SIGHT_RANGE)
                 
@@ -509,9 +492,17 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    field:openPortal(2,2,2,2,RIGHT,UP,UP,RIGHT)
-    field:get(2,2).colTop = false
-    field:get(3,2).colLeft = false
+    field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
+    field:get(2,2).colTop = true
+    field:get(3,2).colTop = true
+    field:get(4,2).colTop = true
+    field:get(5,2).colTop = true
+    field:get(2,3).colTop = true
+    field:get(3,3).colTop = true
+    field:get(4,3).colTop = true
+    field:get(5,3).colTop = true
+
+    field:get(WINNINGX,WINNINGY).background = "goal.png"
     
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
