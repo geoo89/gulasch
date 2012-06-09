@@ -509,9 +509,18 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
     --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    field:openPortal(2,2,2,2,RIGHT,UP,UP,RIGHT)
-    field:get(2,2).colTop = false
+    
+    --self connect, right to top
+    --field:openPortal(2,2,2,2,RIGHT,UP,UP,RIGHT)
+    --field:get(2,2).colTop = false
+    --field:get(3,2).colLeft = false
+    
+    --mobius strip:
+    field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
     field:get(3,2).colLeft = false
+    field:get(2,2).colLeft = false
+    field:get(4,2).colLeft = false
+    field:get(5,2).colLeft = false
     
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
