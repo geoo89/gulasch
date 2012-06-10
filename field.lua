@@ -521,7 +521,7 @@ function DefaultField(w,h)
                         local mirrored = false
                         if  portal.yout > y
                         or (portal.yout == y and portal.xout > x)
-                        or (portal.yout == y and portal.xout == x and portal.sideout > dir) then
+                        or (portal.yout == y and portal.xout == x and portal.sideout >= dir) then
                             img = "portalout.png"
                             
                             numberAt(portalNumber, x, y, dir, {0,0,0,255})
@@ -709,7 +709,7 @@ function DefaultField(w,h)
                         
                         if  portal.yout > y
                         or (portal.yout == y and portal.xout > x)
-                        or (portal.yout == y and portal.xout == x and portal.sideout > e) then
+                        or (portal.yout == y and portal.xout == x and portal.sideout >= e) then
                             f:write("    PORTAL "..x.." "..y.." "..portal.xout.." "..portal.yout.." "..e.." "..portal.upin.." "..portal.sideout.." "..portal.upout.."\n")
                         end
                     end
