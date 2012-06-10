@@ -21,9 +21,10 @@ editor.LEVEL_DIR = 'levels/'
 
 editor.keys = {
     RESET = 'r',
-    LEFT = 'a', RIGHT = 'd', UP = 'w', DOWN = 's',
+    LEFT = 'a', RIGHT = 'd', UP = 'w', DOWN = 's', SPEED = 'lshift',
     WLEFT = 'left', WRIGHT = 'right', WUP = 'up', WDOWN = 'down',
     CYCLE = 'return', PLACE = 'i', REMOVE = 'p', PORTAL = 'lctrl', PORTAL_CHOOSE = 'lalt',
+    SELECT = 'lalt',
     LEVEL_PLUS = 'f9', LEVEL_MINUS = 'f10', LEVEL_SAVE = 'f5'
 }
 
@@ -59,16 +60,21 @@ end
 
 -- Move view
 function editor:update(dt) 
+    local factor = 1
+    if (kb.isDown(self.keys.SPEED)) then
+        factor = 3
+    end
+
     if (kb.isDown(self.keys.LEFT)) then
-        self.ox = self.ox + self.INC * dt
+        self.ox = self.ox + self.INC * dt * factor
     elseif (kb.isDown(self.keys.RIGHT)) then
-        self.ox = self.ox - self.INC * dt
+        self.ox = self.ox - self.INC * dt * factor
     end
     
     if (kb.isDown(self.keys.UP)) then
-        self.oy = self.oy + self.INC * dt
+        self.oy = self.oy + self.INC * dt * factor
     elseif (kb.isDown(self.keys.DOWN)) then
-        self.oy = self.oy - self.INC * dt
+        self.oy = self.oy - self.INC * dt * factor
     end
 end
 
@@ -83,7 +89,7 @@ function editor:getObject()
 
     for i, o in pairs(objects) do
         -- Hack...
-        if (math.abs(mx - o.cx) < o.xrad and math.abs(my - o.cy) < o.yrad and o.img ~= "star.png") then
+        if (math.abs(mx - o.cx) < o.xrad and math.abs(my - o.cy) < o.yrad and o ~= markerStar) then
             self.sobject = o
             self.dx = o.cx - mx
             self.dy = o.cy - my
@@ -125,43 +131,36 @@ function editor:togglePortal(dir)
     field:togglePortal(self.selectx, self.selecty, dir)
 end
 
--- All kinds of stuff
+-- Stuff for cursor
+function editor:cursor(dir)
+    if (kb.isDown(self.keys.PORTAL)) then
+        if (kb.isDown(self.keys.PORTAL_CHOOSE)) then
+            self:togglePortal(dir)        
+        else
+            self:setPortal(dir)
+        end
+    elseif (kb.isDown(self.keys.SELECT)) then
+        dx, dy = dirtodxy(dir)
+        self.selectx = math.max(1, math.min(field.width, self.selectx + dx))
+        self.selecty = math.max(1, math.min(field.height, self.selecty + dy))
+    else
+        self:toggleWall(dir)
+    end
+end
+
+-- All editor commandos
 function editor:keyboard(key)
     if (key == self.keys.RESET) then
         self.ox = 0
         self.oy = 0
     elseif (key == self.keys.WLEFT) then
-        if (kb.isDown(self.keys.PORTAL)) then
-            self:setPortal(LEFT)
-        elseif (kb.isDown(self.keys.PORTAL_CHOOSE)) then
-            self:togglePortal(LEFT)
-        else 
-            self:toggleWall(LEFT)
-        end
+        self:cursor(LEFT)
     elseif (key == self.keys.WRIGHT) then
-        if (kb.isDown(self.keys.PORTAL)) then
-            self:setPortal(RIGHT)
-        elseif (kb.isDown(self.keys.PORTAL_CHOOSE)) then
-            self:togglePortal(RIGHT)
-        else 
-            self:toggleWall(RIGHT)
-        end
+        self:cursor(RIGHT)
     elseif (key == self.keys.WUP) then
-        if (kb.isDown(self.keys.PORTAL)) then
-            self:setPortal(UP)
-        elseif (kb.isDown(self.keys.PORTAL_CHOOSE)) then
-            self:togglePortal(UP)
-        else 
-            self:toggleWall(UP)
-        end
+        self:cursor(UP)
     elseif (key == self.keys.WDOWN) then
-        if (kb.isDown(self.keys.PORTAL)) then
-            self:setPortal(DOWN)
-        elseif (kb.isDown(self.keys.PORTAL_CHOOSE)) then
-            self:togglePortal(DOWN)
-        else 
-            self:toggleWall(DOWN)
-        end
+        self:cursor(DOWN)
     elseif (key == self.keys.LEVEL_PLUS) then
         self.level_idx = self.level_idx % #self.level_list + 1
         self:loadLevel()
@@ -222,8 +221,13 @@ end
 function editor:mouseMoved(x, y)
     local mx, my = self:mouseToField(x, y)
     if (self.sobject) then
-        self.sobject.cx = mx + self.dx
-        self.sobject.cy = my + self.dy
+        local newx = mx + self.dx
+        local newy = my + self.dy
+        
+        if newx > 1.1 and newx <= field.width + 0.9 and newy > 1.1 and newy <= field.height + 0.9 then
+            self.sobject.cx = newx
+            self.sobject.cy = newy
+        end
     end
 end 
 
