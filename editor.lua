@@ -5,7 +5,7 @@ editor = {
     ox = 0, oy = 0,            -- offsets
     selectx = 0, selecty = 0,  -- selected field
     sobject = nil, dx = 0, dy = 0, -- selected object
-    cell_types = {"NONE.png", "goal.png"},
+    cell_types = {"DEFAULT.png", "goal.png"},
     half_open = nil,
     level_list = {},
     level_idx = 1,
