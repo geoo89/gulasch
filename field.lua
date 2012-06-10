@@ -15,6 +15,7 @@ PRIO_WALL =  300
 PRIO_PORTAL = 400
 MARKER_PRIO = 900
 SIGHT_RANGE = 4
+PORTAL_FONT_SIZE = 30
 
 DEFAULT_WIDTH = 64
 DEFAULT_HEIGHT = 32
@@ -481,6 +482,16 @@ function DefaultField(w,h)
             cell.objects[#cell.objects+1] = halfopenmarker
         end
         
+        function numberAt(num,x,y,dir)
+            local dx, dy = dirtodxy(dir)
+            x = (dx / 3 + x+0.5)*CELLSIZE + offx - PORTAL_FONT_SIZE / 2
+            y = (dy / 3 + y+0.5)*CELLSIZE + offy - PORTAL_FONT_SIZE / 2
+            
+            text:print(tostring(num), x, y, PORTAL_FONT_SIZE)
+        end
+        
+        local portalNumber = 1
+        
         for y = ymin,ymax do
             for x = xmin,xmax do
                 local cell = self:get(x,y)
@@ -494,9 +505,13 @@ function DefaultField(w,h)
                         or (portal.yout == y and portal.xout == x and portal.sideout > dir) then
                             img = "portalout.png"
                             mirrored = true
+                            
+                            numberAt(portalNumber, x, y, dir)
+                            numberAt(portalNumber, portal.xout, portal.yout, portal.sideout)
+                            portalNumber = portalNumber + 1
                         end
                     
-                        local portalObj = object(x+0.5, y+0.5, 0.5, 0.5, img, PRIO_PORTAL)
+                        local portalObj = object(x+0.5, y+0.5, 0.5, 0.5, img, PRIO_PORTAL + dir)--avoid ambiguities
                         portalObj.grav = dir
                         
                         if nextdir(dir) == portal.upin then
