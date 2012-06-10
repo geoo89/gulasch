@@ -12,6 +12,7 @@ WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
 PRIO_BACK =   10
 PRIO_WALL =  300
+PRIO_PORTAL = 400
 MARKER_PRIO = 900
 SIGHT_RANGE = 4
 
@@ -413,7 +414,7 @@ function DefaultField(w,h,startWithWalls)
         end
     end
     
-    function field:shadeEditor(offx, offy,hlx,hly)
+    function field:shadeEditor(offx, offy,hlx,hly,halfopen)
         local xmin, xmax, ymin, ymax
         xmin = math.floor(math.max(1         , (-offx-WALLSIZE)     / CELLSIZE))
         xmax = math.floor(math.min(self.width, (RESX-offx-WALLSIZE) / CELLSIZE))
@@ -431,11 +432,43 @@ function DefaultField(w,h,startWithWalls)
         local list = self:get(hlx,hly).objects
         list[#list] = markerStar
         
+        if(halfopen) then
+            local halfopenmarker = object(halfopen.xin+0.5, halfopen.yin+0.5, 0.5, 0.5, "portalmarker.png", PRIO_PORTAL)
+            halfopenmarker.grav = halfopen.side
+            local cell = self:get(halfopen.xin,halfopen.yin)
+            cell.objects[#cell.objects+1] = halfopenmarker
+        end
+        
         for y = ymin,ymax do
             for x = xmin,xmax do
+                local cell = self:get(x,y)
+                for _,dir in pairs(DIRS) do
+                    if(cell.portals[dir]) then
+                        local portal = cell.portals[dir]
+                        local img = "portalin.png"
+                        local mirrored = false
+                        if  portal.yout > y
+                        or (portal.yout == y and portal.xout > x)
+                        or (portal.yout == y and portal.xout == x and portal.sideout > dir) then
+                            img = "portalout.png"
+                            mirrored = true
+                        end
+                    
+                        local portalObj = object(x+0.5, y+0.5, 0.5, 0.5, img, PRIO_PORTAL)
+                        portalObj.grav = dir
+                        
+                        if nextdir(dir) == portal.upin then
+                            mirrored = not mirrored
+                        end
+                        portalObj.mirrored = mirrored
+                        cell.objects[#cell.objects+1] = portalObj
+                    end
+                end
+            
                 self:shadeCell(x, y, x * CELLSIZE + offx, y * CELLSIZE + offy, DOWN, RIGHT,255)
             end
         end
+        
     end
     
     function field:shade()
