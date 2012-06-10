@@ -560,66 +560,107 @@ function DefaultField(w,h,startWithWalls)
     end
     
     function field:export(filename)
-        io.output(io.open(filename,"w"))
+        local f = assert(io.open(filename,"w"))
+        
+        function writeProp(name,value)
+            f:write(name, " ", value, "\n")
+        end
         
         writeProp("mapWidth",self.width)
         writeProp("mapHeight", self.height)
         
         -- print list of non-walls
         for y = 1,self.height do
-            io.write("    ")
+            f:write("    ")
             for x = 1,self.width do
                 if(self:hasWall(x,y,TOP)) then
-                    io.write(x, " ", y, " ", dirToStr(TOP), " ")
+                    f:write(x, " ", y, " ", dirToStr(TOP), " ")
                 end
                 
                 if(self:hasWall(x,y,LEFT)) then
-                    io.write(x, " ", y, " ", dirToStr(LEFT), " ")
+                    f:write(x, " ", y, " ", dirToStr(LEFT), " ")
                 end
-                
-                io.write("\n")
             end
+            
+            f:write("\n")
         end
         
-        io.write("\n", -1, " ", -1, " ", "END_OF_WALLS\n")
+        f:write(-1, " ", -1, " ", "END_OF_WALLS\n\n")
         
+        f:write("PORTALS\n")
         for y = 1,self.height do
             for x = 1,self.width do
                 local cell = self:get(x,y)
                 for _,e in pairs(DIRS) do
-                    if(cell.portals[dir]) then
-                        local portal = cell.portals[dir]
+                    if(cell.portals[e]) then
+                        local portal = cell.portals[e]
                         
                         if  portal.yout > y
                         or (portal.yout == y and portal.xout > x)
-                        or (portal.yout == y and portal.xout == x and portal.sideout > dir) then
-                            io.write("    PORTAL "..x.." "..y.." "..portal.xout.." "..portal.yout.." "..dir.." "..portal.upin.." "..portal.sideout.." "..portal.upout.."\n")
+                        or (portal.yout == y and portal.xout == x and portal.sideout > e) then
+                            f:write("    PORTAL "..x.." "..y.." "..portal.xout.." "..portal.yout.." "..e.." "..portal.upin.." "..portal.sideout.." "..portal.upout.."\n")
                         end
                     end
                 end
             end
         end
         
-        io.write("\nEND_OF_PORTALS\n")
+        f:write("END_OF_PORTALS\n\n")
         
         for k,o in pairs(objects) do
-            io.write(o.typ, "\n")
+            f:write(o.typ, "\n")
             
-            for key,value in o do
-                writeProp("    "..key.." "..type(value).." "..value.."\n")
+            for key,value in pairs(o) do
+                if (type(value) ~= "function") then
+                    f:write("    "..key.." "..type(value).." "..tostring(value).."\n")
+                end
             end
             
-            io.write("END_OF_OBJECT")
+            f:write("END_OF_OBJECT\n")
         end
         
-        io.write("END_OF_MAP")
+        f:write("END_OF_MAP\n")
+        f:close()
     end
     
     return field;
 end
 
 function import(filename)
-    io.input = io.open(filename,"r")
+    local f = assert(io.open(filename, "r"))
+
+    function readString()
+        local str
+        repeat
+            str = f:read(1)
+        until str ~= " " and str ~= "\n"
+        
+        repeat
+            next = f:read(1)
+            
+            if(next ~= " " and next ~= "\n") then
+                str = str..next
+            else
+                break
+            end
+        until false
+        
+        return str
+    end
+
+    function expect(name)
+        local str = readString()
+        
+        if (str ~= name) then
+            error("Expected '"..name.."', but found '"..str.."'.")
+        end
+    end
+
+    function readProp(name)
+        expect(name)
+        return f:read("*number")
+    end
+
     local w = readProp("mapWidth")
     local h = readProp("mapHeight")
     
@@ -630,9 +671,9 @@ function import(filename)
     local y
     local dir
     repeat
-        x = io.read("*number")
-        y = io.read("*number")
-        dir = io.read(20)
+        x = f:read("*number")
+        y = f:read("*number")
+        dir = readString()
         
         if(dir ~= "END_OF_WALLS") then
             field:toggleWall(x,y,dirFromStr(dir))
@@ -641,56 +682,58 @@ function import(filename)
         end
     until false
     
-    str = io.read(100)
+    expect("PORTALS")
+    str = readString()
     while(str == "PORTAL") do
-        local x,y,xout,yout,dir,up,dirout,upout =
-            io.read("*number", "*number", "*number", "*number", "*number", "*number", "*number", "*number")
+        local x = f:read("*n")
+        local y = f:read("*n")
+        local xout = f:read("*n")
+        local yout = f:read("*n")
+        local dir = f:read("*n")
+        local up = f:read("*n")
+        local dirout = f:read("*n")
+        local upout = f:read("*n")
+        
         field:openPortal(x,y,xout,yout,dir,up,dirout,upout)
+        str = readString()
     end
     
     if (str ~= "END_OF_PORTALS") then
         error("Expected 'END_OF_PORTALS' but found '"..str.."'")
     end
     
-    local constructor = io.read(100)
+    local constructor = readString()
     
     while(constructor ~= "END_OF_MAP") do
-        local o
-        loadstring("o = "..constructor.."()")
-        
-        local prop = io.read(100)
+        local o  = _G[constructor]()
+        local prop = readString()
         
         while(prop ~= "END_OF_OBJECT") do
-            typname = io.read(100)
-            o[prop] = io.read("*"..typename)
-            local prop = io.read(100)
+            local typname = readString()
+            if(typname == "string") then
+                o[prop] = readString()
+            elseif(typname == "boolean") then
+                o[prop] = readString() == "true"
+            elseif(typname =="number") then
+                o[prop] = f:read("*number")
+            else
+                error("I dont know that type: "..typname)
+            end
+            
+            prop = readString()
         end
         
         objects[#objects+1] = o
-        constructor = io.read(100)
+        
+        if(constructor == "makeplayer") then
+            player = o
+        end
+        
+        constructor = readString()
     end
-end
-
-function writeProp(name,value)
-    io.write(name, " ", value, "\n")
-end
-
-function expect(name)
-    local str = io.read(100)
     
-    if (str ~= name) then
-        error("Expected '"..name.."', but found '"..str.."'.")
-    end
+    io.close()
 end
-
-function readProp(name)
-    expect(name)
-    return io.read("*number")
-end
-
-cx       = 500
-cy       = 500
-cellSize = 128
 
 function fieldInit()
     testfield = 1
@@ -757,7 +800,7 @@ function fieldInit()
     end
     
     field:export("blabla.map")
-    
+    import("blabla.map")
     
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
