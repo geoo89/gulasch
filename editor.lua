@@ -24,7 +24,7 @@ editor.keys = {
     LEFT = 'a', RIGHT = 'd', UP = 'w', DOWN = 's', SPEED = 'lshift',
     WLEFT = 'left', WRIGHT = 'right', WUP = 'up', WDOWN = 'down',
     CYCLE = 'return', PLACE = 'i', REMOVE = 'p', PORTAL = 'lctrl', PORTAL_CHOOSE = 'lalt',
-    SELECT = 'lalt',
+    SELECT = 'lalt', ROTATE = 't',
     LEVEL_PLUS = 'f9', LEVEL_MINUS = 'f10', LEVEL_SAVE = 'f5'
 }
 
@@ -172,6 +172,12 @@ function editor:keyboard(key)
         self:loadLevel()
     elseif (key == self.keys.LEVEL_SAVE) then
         self:saveLevel()
+    elseif (key == self.keys.ROTATE) then
+        local o = self:getObject()
+        
+        if (o) then
+            o.grav = nextdir(o.grav)
+        end
     elseif (key == self.keys.CYCLE) then
         local o = self:getObject()
         

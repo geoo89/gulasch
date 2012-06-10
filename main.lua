@@ -8,8 +8,8 @@ require 'editor'
 require 'text'
 --require 'field'
 
-RESX=800
-RESY=600
+RESX=1366
+RESY=768
 
 MODE = {
     RENDER = 0,
@@ -20,7 +20,7 @@ mode = MODE.EDITOR
 
 function love.load()
     -- print("Test")
-    assert(gr.setMode(RESX, RESY, false, false), "Could not set screen mode")
+    assert(gr.setMode(RESX, RESY, true, false), "Could not set screen mode")
     loadTextures()
     fieldInit()
     editor:init()
@@ -38,9 +38,9 @@ function love.load()
     ps:setSpin(0,2*math.pi,1)
     ps:start()
     
-    local v = vector.new(1, 2)
-    local w = vector.new(3, 5)
-    print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3) .. v.length() .. v.ortho() .. v.dot(w))
+    --local v = vector.new(1, 2)
+    --local w = vector.new(3, 5)
+    --print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3) .. v.length() .. v.ortho() .. v.dot(w))
 end
 
 function love.draw()
@@ -56,7 +56,7 @@ function love.draw()
     render:draw()
     
     text:print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100))
-    text:print(timer.getFPS())
+    text:print(timer.getFPS() .. ' fps')
     --text:print(timer.getFPS(), 100, 100, 50)
     text:print("Move crate to goal", 20, {255, 255, 255, 255})
     if WON==true then 
@@ -125,6 +125,7 @@ function love.keypressed(key, unicode)
             import('current.txt')
             mode = MODE.EDITOR
         else
+            editor.half_open = nil
             field:export('current.txt')
             mode = MODE.RENDER
         end
