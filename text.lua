@@ -22,10 +22,21 @@ end
 
 -- Add text to render list
 function text:print(str, x, y, size, color)
-    -- 2-parameter version
+    local x = x
+    local y = y
     local size = size
-    if x and not y then
+    local color = color
+    
+    -- 2-parameter version
+    if x and (not y or type(y) == 'table') then
         size = x
+        x = nil
+    end
+    
+    -- 3-parameter version
+    if type(y) == 'table' then
+        color = y
+        y = nil
     end
 
     self.lines[#self.lines + 1] = {

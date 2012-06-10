@@ -57,8 +57,8 @@ function love.draw()
     
     text:print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100))
     text:print(timer.getFPS())
-    text:print(timer.getFPS(), 100, 100, 50)
-    text:print("Move crate to goal", 20)
+    --text:print(timer.getFPS(), 100, 100, 50)
+    text:print("Move crate to goal", 20, {255, 255, 255, 255})
     if WON==true then 
         text:print("A winner is you!", 20) 
     end
