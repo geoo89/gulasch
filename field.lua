@@ -254,11 +254,26 @@ function DefaultField(w,h)
         return self._cells[y][x];
     end
     
+    function field:isBadPortalPosition(x,y,dir)
+        return (x == 1 and dir == LEFT)
+        or(x == field.width and dir == RIGHT)
+        or(y == 1 and dir == UP)
+        or(y == field.height and dir == BOTTOM)
+    end
+    
     function field:openPortal(x1,y1,x2,y2, side1, up1, side2, up2)
         assertValidDir(side1)
         assertValidDir(up1)
         assertValidDir(side2)
         assertValidDir(up2)
+        
+        if(self:isBadPortalPosition(x1,y1,side1))
+        or(self:isBadPortalPosition(x2,y2,side2)) then
+            return
+        end
+        
+        field:destroyPortal(x1,y1,side1)
+        field:destroyPortal(x2,y2,side2)
         
         if(field:hasWall(x1,y1,side1)) then
             field:toggleWall(x1,y1,side1)
@@ -416,7 +431,11 @@ function DefaultField(w,h)
     
     function field:togglePortal(x,y,dir)
         local portal = self:get(x,y).portals[dir]
-        if portal then portal.upin = -portal.upin end
+        if portal then
+            portal.upin = -portal.upin
+            local other = self:get(portal.xout,portal.yout).portals[portal.sideout]
+            other.upout = -other.upout
+        end
     end
     
     function field:toggleWallStrip(x,y,dir,...)
@@ -482,18 +501,18 @@ function DefaultField(w,h)
             cell.objects[#cell.objects+1] = halfopenmarker
         end
         
-        function numberAt(num,x,y,dir)
+        function numberAt(num,x,y,dir,color)
             local dx, dy = dirtodxy(dir)
             x = (dx / 3 + x+0.5)*CELLSIZE + offx - PORTAL_FONT_SIZE / 2
             y = (dy / 3 + y+0.5)*CELLSIZE + offy - PORTAL_FONT_SIZE / 2
             
-            text:print(tostring(num), x, y, PORTAL_FONT_SIZE)
+            text:print(tostring(num), x, y, PORTAL_FONT_SIZE, color)
         end
         
         local portalNumber = 1
         
-        for y = ymin,ymax do
-            for x = xmin,xmax do
+        for y = 1,field.height do
+            for x = 1,field.width do
                 local cell = self:get(x,y)
                 for _,dir in pairs(DIRS) do
                     if(cell.portals[dir]) then
@@ -504,10 +523,9 @@ function DefaultField(w,h)
                         or (portal.yout == y and portal.xout > x)
                         or (portal.yout == y and portal.xout == x and portal.sideout > dir) then
                             img = "portalout.png"
-                            mirrored = true
                             
-                            numberAt(portalNumber, x, y, dir)
-                            numberAt(portalNumber, portal.xout, portal.yout, portal.sideout)
+                            numberAt(portalNumber, x, y, dir, {0,0,0,255})
+                            numberAt(portalNumber, portal.xout, portal.yout, portal.sideout, {255, 255, 255,255})
                             portalNumber = portalNumber + 1
                         end
                     
@@ -521,8 +539,12 @@ function DefaultField(w,h)
                         cell.objects[#cell.objects+1] = portalObj
                     end
                 end
-            
-                self:shadeCell(x, y, x * CELLSIZE + offx, y * CELLSIZE + offy, DOWN, RIGHT,255)
+                
+                --shading is expensive. The part above has to be done for consistent portal numbering
+                if (ymin <= y and y <= ymax)
+                and(xmin <= x and x <= xmax) then
+                    self:shadeCell(x, y, x * CELLSIZE + offx, y * CELLSIZE + offy, DOWN, RIGHT,255)
+                end
             end
         end
         
