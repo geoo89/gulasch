@@ -22,6 +22,7 @@ function love.load()
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
     loadTextures()
     fieldInit()
+    editor:init()
     isPaused = true
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)

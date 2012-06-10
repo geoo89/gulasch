@@ -316,7 +316,7 @@ function DefaultField()
         end
         
         for k,o in pairs(cell.objects) do
-            print("foundobject")
+            --print("foundobject")
             drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
         end
     end
