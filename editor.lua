@@ -20,7 +20,7 @@ editor.FILE_NAME = 'levels.txt'
 editor.LEVEL_DIR = 'levels/'
 
 editor.keys = {
-    RESET = 'r',
+    RESET = 'r', TO_PLAYER = 'c',
     LEFT = 'a', RIGHT = 'd', UP = 'w', DOWN = 's', SPEED = 'lshift',
     WLEFT = 'left', WRIGHT = 'right', WUP = 'up', WDOWN = 'down',
     CYCLE = 'return', PLACE = 'i', REMOVE = 'p', PORTAL = 'lctrl', PORTAL_CHOOSE = 'lalt',
@@ -131,7 +131,7 @@ function editor:togglePortal(dir)
     field:togglePortal(self.selectx, self.selecty, dir)
 end
 
--- Stuff for cursor
+-- Stuff for cursor keys
 function editor:cursor(dir)
     if (kb.isDown(self.keys.PORTAL)) then
         if (kb.isDown(self.keys.PORTAL_CHOOSE)) then
@@ -140,11 +140,11 @@ function editor:cursor(dir)
             self:setPortal(dir)
         end
     elseif (kb.isDown(self.keys.SELECT)) then
+        self:toggleWall(dir)
+    else
         dx, dy = dirtodxy(dir)
         self.selectx = math.max(1, math.min(field.width, self.selectx + dx))
         self.selecty = math.max(1, math.min(field.height, self.selecty + dy))
-    else
-        self:toggleWall(dir)
     end
 end
 
@@ -153,6 +153,9 @@ function editor:keyboard(key)
     if (key == self.keys.RESET) then
         self.ox = 0
         self.oy = 0
+    elseif (key == self.keys.TO_PLAYER) then
+        self.ox = -player.cx + 0.5 * RESX / CELLSIZE
+        self.oy = -player.cy + 0.5 * RESY / CELLSIZE
     elseif (key == self.keys.WLEFT) then
         self:cursor(LEFT)
     elseif (key == self.keys.WRIGHT) then

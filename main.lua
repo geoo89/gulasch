@@ -20,7 +20,7 @@ mode = MODE.EDITOR
 
 function love.load()
     -- print("Test")
-    assert(gr.setMode(RESX, RESY), "Could not set screen mode")
+    assert(gr.setMode(RESX, RESY, false, false), "Could not set screen mode")
     loadTextures()
     fieldInit()
     editor:init()
