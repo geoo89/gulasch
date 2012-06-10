@@ -242,11 +242,10 @@ function collide(r1, r2)
 end
 
 fieldInit()
-wurstfield = field
 
 function collidecell(r, nx, ny)
     
-    local curcell = wurstfield:get(nx,ny)
+    local curcell = field:get(nx,ny)
     
     if curcell.colTop == true then
         local wall = rigidbody(nx+0.5, ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
@@ -265,25 +264,25 @@ function collidewall(r)
     
     -- TODO: TAKE NEW ORIENTATION INTO ACCOUNT
     collidecell(r, wx, wy)
-    nx,ny = wurstfield:go(wx,wy,DOWN)
+    nx,ny = field:go(wx,wy,DOWN)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,UP)
+    nx,ny = field:go(wx,wy,UP)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,LEFT)
+    nx,ny = field:go(wx,wy,LEFT)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,RIGHT)
+    nx,ny = field:go(wx,wy,RIGHT)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,RIGHT)
-    nx,ny = wurstfield:go(nx,ny,UP)
+    nx,ny = field:go(wx,wy,RIGHT)
+    nx,ny = field:go(nx,ny,UP)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,RIGHT)
-    nx,ny = wurstfield:go(nx,ny,DOWN)
+    nx,ny = field:go(wx,wy,RIGHT)
+    nx,ny = field:go(nx,ny,DOWN)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,LEFT)
-    nx,ny = wurstfield:go(nx,ny,DOWN)
+    nx,ny = field:go(wx,wy,LEFT)
+    nx,ny = field:go(nx,ny,DOWN)
     collidecell(r, nx, ny)
-    nx,ny = wurstfield:go(wx,wy,LEFT)
-    nx,ny = wurstfield:go(nx,ny,UP)
+    nx,ny = field:go(wx,wy,LEFT)
+    nx,ny = field:go(nx,ny,UP)
     collidecell(r, nx, ny)
     
 end

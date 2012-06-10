@@ -338,7 +338,6 @@ function DefaultField(w,h,startWithWalls)
         end
         
         for k,o in pairs(cell.objects) do
-            print("foundobject")
             drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
         end
     end
@@ -414,7 +413,7 @@ function DefaultField(w,h,startWithWalls)
             local y = math.floor(e.cy)
             
             local map = self:get(x,y).objects;
-            print("x:"..x..",y="..y)
+            --print("x:"..x..",y="..y)
             map[#map+1] = e;
         end
     end
@@ -465,10 +464,7 @@ function DefaultField(w,h,startWithWalls)
         --drawTileInCell(2*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",UP,    RIGHT,255,1)
         --drawTileInCell(3*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",LEFT,  UP,   255,1)
         --drawTileInCell(4*CELLSIZE,2*CELLSIZE,  0,  0,1,1,"NONE.png",DOWN,  LEFT, 255,1)
-        
-        field:shadeEditor(-200, -200, 3, 3)
-        if true then return end
-        
+                
         self:collectObjects();
         
         local px = RESX / 2;
@@ -569,7 +565,12 @@ function DefaultField(w,h,startWithWalls)
     end
     
     function field:export(filename)
+        print"bla"
+        print(io.open(filename,"w"))
         io.output(io.open(filename,"w"))
+        
+        
+        
         io.write(self.width, " ", self.height, "\n")
         
         -- print list of non-walls
@@ -633,6 +634,18 @@ function fieldInit()
     --field:get(2,2).colTop = false
     --field:get(3,2).colLeft = false
     
+    --mobius strip:
+    --field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
+    --field:get(2,2).colTop = true
+    --field:get(3,2).colTop = true
+    --field:get(4,2).colTop = true
+    --field:get(5,2).colTop = true
+    --field:get(2,3).colTop = true
+    --field:get(3,3).colTop = true
+    --field:get(4,3).colTop = true
+    --field:get(5,3).colTop = true
+    --field:get(WINNINGX,WINNINGY).background = "goal.png"
+
     if testfield == 1 then
         field = DefaultField(20,20,true)
         player.cx = 2.5
