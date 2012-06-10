@@ -5,9 +5,11 @@ GRAV_STRENGTH = 1
 AIR_ACCEL = 1
 FLOOR_SPEED = 1
 VEL_CAP = 4
+FRICTION = 4
 
 function object(cx, cy, xrad, yrad, img, z)
     local o = {}
+    o.typ = "object"
     o.cx = cx
     o.cy = cy
     o.xrad = xrad
@@ -28,6 +30,7 @@ end
 function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
     local o = object(cx, cy, xrad, yrad, img, z)
     o.rigid = true
+    o.typ = "rigidbody"
     o.velx = velx or 0
     o.vely = vely or 0
     o.weight = weight or 1
@@ -101,6 +104,7 @@ end
 
 function makeplayer(cx, cy)
     local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN);
+    p.typ = "makeplayer"
     
     p.onfloor = true
     --p.cx, p.cy = 2.5, 2.5
@@ -211,6 +215,7 @@ function collide(r1, r2)
 
             if math.abs(xoffset) < math.abs(yoffset) then       
                 local v = (r1.weight * r1.velx + r2.weight * r2.velx) / (r1.weight + r2.weight)
+                if r1.weight > 99999 or r2.weight > 99999 then v=0 end
                 r1.velx = v
                 r2.velx = v
 
@@ -227,6 +232,7 @@ function collide(r1, r2)
                 end
             else
                 local v = (r1.weight * r1.vely + r2.weight * r2.vely) / (r1.weight + r2.weight)
+                if r1.weight > 99999 or r2.weight > 99999 then v=0 end
                 r1.vely = v
                 r2.vely = v
 
