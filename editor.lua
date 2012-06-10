@@ -12,7 +12,7 @@ editor = {
     
     object_types = {function() return rigidbody(0, 0, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN) end, 
                     function() return rigidbody(0, 0, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN) end}, 
-    object_names = {"crate.png", "player.png"},
+    object_names = {"crate.png"},
     wall = LEFT
 } 
 
@@ -24,19 +24,20 @@ editor.keys = {
     RESET = 'r',
     LEFT = 'a', RIGHT = 'd', UP = 'w', DOWN = 's',
     WLEFT = 'left', WRIGHT = 'right', WUP = 'up', WDOWN = 'down',
-    CYCLE = 'return', PLACE = 'p', REMOVE = 'o', PORTAL = 'lctrl', PORTAL_CHOOSE = 'lalt',
+    CYCLE = 'return', PLACE = 'i', REMOVE = 'p', PORTAL = 'lctrl', PORTAL_CHOOSE = 'lalt',
     LEVEL_PLUS = 'f9', LEVEL_MINUS = 'f10', LEVEL_SAVE = 'f5'
 }
 
 -- Set level to self.file_idx
 function editor:loadLevel()
     print("Loading level " .. self.LEVEL_DIR .. self.level_list[self.level_idx]) 
-    --importField(self.LEVEL_DIR .. self.level_list[self.level_idx])
+    import(self.LEVEL_DIR .. self.level_list[self.level_idx])
 end
 
 -- Save current level
 function editor:saveLevel()
-    --exportField(self.LEVEL_DIR .. self.level_list[self.level_idx])
+    print("Saving level " .. self.LEVEL_DIR .. self.level_list[self.level_idx]) 
+    field:export(self.LEVEL_DIR .. self.level_list[self.level_idx])
 end
 
 -- Initialise editor --> load file list
@@ -126,8 +127,8 @@ end
 -- All kinds of stuff
 function editor:keyboard(key)
     if (key == self.keys.RESET) then
-        ox = 0
-        oy = 0
+        self.ox = 0
+        self.oy = 0
     elseif (key == self.keys.WLEFT) then
         if (kb.isDown(self.keys.PORTAL)) then
             self:setPortal(LEFT)
@@ -194,7 +195,7 @@ function editor:keyboard(key)
         objects[#objects].cy = my
     elseif (key == self.keys.REMOVE) then
         local o = self:getObject()
-        if (o) then
+        if (o and o ~= player) then
             table.remove(objects, table.find(objects, o))
         end
     end

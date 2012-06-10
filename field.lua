@@ -5,6 +5,8 @@ DOWN  = BOTTOM
 LEFT  =  2
 RIGHT = -2
 
+DIRS = { UP, DOWN, LEFT, RIGHT }
+
 CELLSIZE = 128
 WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
@@ -12,6 +14,9 @@ PRIO_BACK =   10
 PRIO_WALL =  300
 MARKER_PRIO = 900
 SIGHT_RANGE = 4
+
+DEFAULT_WIDTH = 64
+DEFAULT_HEIGHT = 32
 
 function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
@@ -105,11 +110,13 @@ end
 
 cellCount = 0
 
-function DefaultCell()
+function DefaultCell(startWithWalls)
+    startWithWalls = startWithWalls or false
+
     local cell = {}
     cell.background = "NONE.png";
-    cell.colTop    = true
-    cell.colLeft   = true
+    cell.colTop    = startWithWalls
+    cell.colLeft   = startWithWalls
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
@@ -120,9 +127,8 @@ end
 function Portal()
     local portal = {}
     --[[properties:
-        xin,yin,
         xout,yout,
-        sidein, sideout
+        sideout
         upin,upout]]
     return portal;
 end
@@ -149,7 +155,21 @@ function dirToStr(dir)
     if(dir == UP) then return "UP"
     elseif(dir == DOWN) then return "DOWN"
     elseif(dir == LEFT) then return "LEFT"
-    elseif(dir == RIGHT) then return "RIGHT" end
+    else return "RIGHT" end
+end
+
+function dirFromStr(dirstr)
+    if(dirstr == "UP") then
+        return UP
+    elseif(dirstr == "DOWN") then
+        return DOWN
+    elseif(dirstr == "LEFT") then
+        return LEFT
+    elseif(dirstr == "RIGHT") then
+        return RIGHT
+    end
+    
+    error("dirFromStr: Invalid direction string ("..dirstr..")")
 end
 
 function dxytodir(dx,dy)
@@ -194,17 +214,20 @@ function nextdir(dir)
     end
 end
 
-function DefaultField()
+function DefaultField(w,h,startWithWalls)
+    w = w or DEFAULT_WIDTH
+    h = h or DEFAULT_HEIGHT
+
     local field = {};
-    field.width  = 64;
-    field.height = 32;
+    field.width  = w;
+    field.height = h;
     field._cells = {};
-    field._defCell = DefaultCell();
+    field._defCell = DefaultCell(startWithWalls);
     
     function defRow()
         local row = {};
         for i = 1,field.width do
-            row[i] = DefaultCell();
+            row[i] = DefaultCell(startWithWalls);
         end
         return row;
     end
@@ -227,21 +250,15 @@ function DefaultField()
         assertValidDir(up2)
     
         local portal1   = Portal();
-        portal1.xin     = x1;
         portal1.xout    = x2;
-        portal1.yin     = y1;
         portal1.yout    = y2;
-        portal1.sidein  = side1;
         portal1.sideout = side2;
         portal1.upin   = up1;
         portal1.upout  = up2;
         
         local portal2   = Portal();
-        portal2.xin     = x2;
         portal2.xout    = x1;
-        portal2.yin     = y2;
         portal2.yout    = y1;
-        portal2.sidein  = side2;
         portal2.sideout = side1;
         portal2.upin    = up2;
         portal2.upout   = up1;
@@ -316,7 +333,6 @@ function DefaultField()
         end
         
         for k,o in pairs(cell.objects) do
-            --print("foundobject")
             drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
         end
     end
@@ -397,35 +413,29 @@ function DefaultField()
         end
     end
     
-    if not markerStar then
-        markerStar = object(-1, -1, 1/2, 1/2, "star.png", MARKER_PRIO)
-        objects[#objects+1] = markerStar
-    end
-    
     function field:shadeEditor(offx, offy,hlx,hly)
         local xmin, xmax, ymin, ymax
         xmin = math.floor(math.max(1         , (-offx-WALLSIZE)     / CELLSIZE))
         xmax = math.floor(math.min(self.width, (RESX-offx-WALLSIZE) / CELLSIZE))
         ymin = math.floor(math.max(1         , (-offy-WALLSIZE)     / CELLSIZE))
         ymax = math.floor(math.min(self.height, (RESY-offy-WALLSIZE) / CELLSIZE))
-    
-        markerStar.cx = hlx + 0.5
-        markerStar.cy = hly + 0.5
         
         self:collectObjects();
+        
+        if not markerStar then
+            markerStar = object(-1, -1, 1/2, 1/2, "star.png", MARKER_PRIO)
+        end
+        
+        markerStar.cx = hlx + 0.5
+        markerStar.cy = hly + 0.5
+        local list = self:get(hlx,hly).objects
+        list[#list] = markerStar
+        
         for y = ymin,ymax do
             for x = xmin,xmax do
                 self:shadeCell(x, y, x * CELLSIZE + offx, y * CELLSIZE + offy, DOWN, RIGHT,255)
             end
         end
-        
-        -- print star over selected image
-        markerStar.cx = -1
-        markerStar.cy = -1
-    end
-    
-    function field:export(io)
-        
     end
     
     function field:shade()
@@ -549,19 +559,184 @@ function DefaultField()
         end
     end
     
+    function field:export(filename)
+        local f = assert(io.open(filename,"w"))
+        
+        function writeProp(name,value)
+            f:write(name, " ", value, "\n")
+        end
+        
+        writeProp("mapWidth",self.width)
+        writeProp("mapHeight", self.height)
+        
+        -- print list of non-walls
+        for y = 1,self.height do
+            f:write("    ")
+            for x = 1,self.width do
+                if(self:hasWall(x,y,TOP)) then
+                    f:write(x, " ", y, " ", dirToStr(TOP), " ")
+                end
+                
+                if(self:hasWall(x,y,LEFT)) then
+                    f:write(x, " ", y, " ", dirToStr(LEFT), " ")
+                end
+            end
+            
+            f:write("\n")
+        end
+        
+        f:write(-1, " ", -1, " ", "END_OF_WALLS\n\n")
+        
+        f:write("PORTALS\n")
+        for y = 1,self.height do
+            for x = 1,self.width do
+                local cell = self:get(x,y)
+                for _,e in pairs(DIRS) do
+                    if(cell.portals[e]) then
+                        local portal = cell.portals[e]
+                        
+                        if  portal.yout > y
+                        or (portal.yout == y and portal.xout > x)
+                        or (portal.yout == y and portal.xout == x and portal.sideout > e) then
+                            f:write("    PORTAL "..x.." "..y.." "..portal.xout.." "..portal.yout.." "..e.." "..portal.upin.." "..portal.sideout.." "..portal.upout.."\n")
+                        end
+                    end
+                end
+            end
+        end
+        
+        f:write("END_OF_PORTALS\n\n")
+        
+        for k,o in pairs(objects) do
+            f:write(o.typ, "\n")
+            
+            for key,value in pairs(o) do
+                if (type(value) ~= "function") then
+                    f:write("    "..key.." "..type(value).." "..tostring(value).."\n")
+                end
+            end
+            
+            f:write("END_OF_OBJECT\n")
+        end
+        
+        f:write("END_OF_MAP\n")
+        f:close()
+    end
+    
     return field;
 end
 
-cx       = 500
-cy       = 500
-cellSize = 128
+function import(filename)
+    local f = assert(io.open(filename, "r"))
+
+    function readString()
+        local str
+        repeat
+            str = f:read(1)
+        until str ~= " " and str ~= "\n"
+        
+        repeat
+            next = f:read(1)
+            
+            if(next ~= " " and next ~= "\n") then
+                str = str..next
+            else
+                break
+            end
+        until false
+        
+        return str
+    end
+
+    function expect(name)
+        local str = readString()
+        
+        if (str ~= name) then
+            error("Expected '"..name.."', but found '"..str.."'.")
+        end
+    end
+
+    function readProp(name)
+        expect(name)
+        return f:read("*number")
+    end
+
+    local w = readProp("mapWidth")
+    local h = readProp("mapHeight")
+    
+    field = DefaultField(w,h)
+    objects = {}
+    
+    local x
+    local y
+    local dir
+    repeat
+        x = f:read("*number")
+        y = f:read("*number")
+        dir = readString()
+        
+        if(dir ~= "END_OF_WALLS") then
+            field:toggleWall(x,y,dirFromStr(dir))
+        else
+            break;
+        end
+    until false
+    
+    expect("PORTALS")
+    str = readString()
+    while(str == "PORTAL") do
+        local x = f:read("*n")
+        local y = f:read("*n")
+        local xout = f:read("*n")
+        local yout = f:read("*n")
+        local dir = f:read("*n")
+        local up = f:read("*n")
+        local dirout = f:read("*n")
+        local upout = f:read("*n")
+        
+        field:openPortal(x,y,xout,yout,dir,up,dirout,upout)
+        str = readString()
+    end
+    
+    if (str ~= "END_OF_PORTALS") then
+        error("Expected 'END_OF_PORTALS' but found '"..str.."'")
+    end
+    
+    local constructor = readString()
+    
+    while(constructor ~= "END_OF_MAP") do
+        local o  = _G[constructor]()
+        local prop = readString()
+        
+        while(prop ~= "END_OF_OBJECT") do
+            local typname = readString()
+            if(typname == "string") then
+                o[prop] = readString()
+            elseif(typname == "boolean") then
+                o[prop] = readString() == "true"
+            elseif(typname =="number") then
+                o[prop] = f:read("*number")
+            else
+                error("I dont know that type: "..typname)
+            end
+            
+            prop = readString()
+        end
+        
+        objects[#objects+1] = o
+        
+        if(constructor == "makeplayer") then
+            player = o
+        end
+        
+        constructor = readString()
+    end
+    
+    io.close()
+end
 
 function fieldInit()
-    
-    
-    field = DefaultField()
-    
-    testfield = 0
+    testfield = 1
     
     --field:get(3,2).colLeft = false
     --field:get(3,2).colTop = false
@@ -573,18 +748,19 @@ function fieldInit()
     --field:get(3,2).colLeft = false
     
     --mobius strip:
-    field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
-    field:get(2,2).colTop = true
-    field:get(3,2).colTop = true
-    field:get(4,2).colTop = true
-    field:get(5,2).colTop = true
-    field:get(2,3).colTop = true
-    field:get(3,3).colTop = true
-    field:get(4,3).colTop = true
-    field:get(5,3).colTop = true
+    --field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
+    --field:get(2,2).colTop = true
+    --field:get(3,2).colTop = true
+    --field:get(4,2).colTop = true
+    --field:get(5,2).colTop = true
+    --field:get(2,3).colTop = true
+    --field:get(3,3).colTop = true
+    --field:get(4,3).colTop = true
+    --field:get(5,3).colTop = true
     --field:get(WINNINGX,WINNINGY).background = "goal.png"
 
     if testfield == 1 then
+        field = DefaultField(20,20,true)
         player.cx = 2.5
         player.cy = 2.5
     
@@ -594,6 +770,7 @@ function fieldInit()
         field:get(4,2).colLeft = false
         field:get(5,2).colLeft = false
     elseif testfield == 2 then
+        field = DefaultField(20,20,true)
         player.cx = 2.5
         player.cy = 2.5
         field:get(4,3).colTop = false;
@@ -618,5 +795,15 @@ function fieldInit()
     
         field:openPortal(2,6,5,5,TOP,RIGHT,BOTTOM,RIGHT)
         field:openPortal(4,2,7,3,BOTTOM,RIGHT,TOP,RIGHT)
+    else
+        field = DefaultField()
     end
+    
+    field:export("blabla.map")
+    import("blabla.map")
+    
+    --field:get(3,3).colLeft = false
+    --field:get(7,6).colLeft = false
+    
+    --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
 end
