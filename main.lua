@@ -5,6 +5,7 @@ require 'vector'
 require 'field'
 require 'object'
 require 'editor'
+require 'text'
 --require 'field'
 
 RESX=800
@@ -23,6 +24,7 @@ function love.load()
     loadTextures()
     fieldInit()
     editor:init()
+    text:init()
     --isPaused = true
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
@@ -44,8 +46,6 @@ end
 function love.draw()
     gr.setBackgroundColor(0, 0, 0)
     gr.clear()
-    gr.print(timer.getFPS(),10,10,0,1,1)
-    gr.print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100), 10, 20, 0,1,1)
 
     -- Draw field
     if mode == MODE.RENDER then
@@ -55,9 +55,14 @@ function love.draw()
     end
     render:draw()
     
-    gr.print(timer.getFPS(),10,10,0,1,1)
-    gr.print("Move crate to goal",10,30,0,1,1)
-    if WON==true then gr.print("A winner is you!",30,50,0,1,1) end
+    text:print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100))
+    text:print(timer.getFPS())
+    text:print("Move crate to goal")
+    if WON==true then 
+        text:print("A winner is you!") 
+    end
+    
+    text:draw()
 end
 
 cnt = 0

@@ -10,8 +10,7 @@ editor = {
     level_list = {},
     level_idx = 1,
     
-    object_types = {function() return rigidbody(0, 0, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN) end, 
-                    function() return rigidbody(0, 0, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN) end}, 
+    object_types = {function() return rigidbody(0, 0, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN) end}, 
     object_names = {"crate.png"},
     wall = LEFT
 } 
@@ -64,7 +63,9 @@ function editor:update(dt)
         self.ox = self.ox + self.INC * dt
     elseif (kb.isDown(self.keys.RIGHT)) then
         self.ox = self.ox - self.INC * dt
-    elseif (kb.isDown(self.keys.UP)) then
+    end
+    
+    if (kb.isDown(self.keys.UP)) then
         self.oy = self.oy + self.INC * dt
     elseif (kb.isDown(self.keys.DOWN)) then
         self.oy = self.oy - self.INC * dt
@@ -109,7 +110,7 @@ end
 function editor:setPortal(dir) 
     if (self.half_open) then
         field:openPortal(self.half_open.xin, self.half_open.yin, self.selectx, self.selecty,
-                         self.half_open.side, DOWN, dir, DOWN)
+                         self.half_open.side, nextdir(self.half_open.side), dir, nextdir(dir))
         self.half_open = nil
     else
         self.half_open = {}
@@ -155,11 +156,11 @@ function editor:keyboard(key)
         end
     elseif (key == self.keys.WDOWN) then
         if (kb.isDown(self.keys.PORTAL)) then
-            self:setPortal(LEFT)
+            self:setPortal(DOWN)
         elseif (kb.isDown(self.keys.PORTAL_CHOOSE)) then
-            self:togglePortal(LEFT)
+            self:togglePortal(DOWN)
         else 
-            self:toggleWall(LEFT)
+            self:toggleWall(DOWN)
         end
     elseif (key == self.keys.LEVEL_PLUS) then
         self.level_idx = self.level_idx % #self.level_list + 1
@@ -172,7 +173,7 @@ function editor:keyboard(key)
     elseif (key == self.keys.CYCLE) then
         local o = self:getObject()
         
-        if (o) then
+        if (o and o ~= player) then
             -- Hack
             -- Change object type
             local cur = table.find(self.object_names, o.img)
@@ -232,5 +233,5 @@ end
 
 -- Draw fields
 function editor:shade()
-    field:shadeEditor(CELLSIZE * self.ox, CELLSIZE * self.oy, self.selectx, self.selecty, half_open)
+    field:shadeEditor(CELLSIZE * self.ox, CELLSIZE * self.oy, self.selectx, self.selecty, self.half_open)
 end
