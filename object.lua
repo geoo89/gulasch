@@ -4,9 +4,12 @@ JUMP_STRENGTH = 6
 GRAV_STRENGTH = 2
 AIR_ACCEL = 1
 FLOOR_SPEED = 1
+VEL_CAP = 4
+FRICTION = 4
 
 function object(cx, cy, xrad, yrad, img, z)
     local o = {}
+    o.typ = "object"
     o.cx = cx
     o.cy = cy
     o.xrad = xrad
@@ -27,6 +30,7 @@ end
 function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
     local o = object(cx, cy, xrad, yrad, img, z)
     o.rigid = true
+    o.typ = "rigidbody"
     o.velx = velx or 0
     o.vely = vely or 0
     o.weight = weight or 1
@@ -36,6 +40,11 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local ax, ay = dirtodxy(o.grav)
         o.velx = o.velx + GRAV_STRENGTH * ax * dt
         o.vely = o.vely + GRAV_STRENGTH * ay * dt
+        
+        if (o.velx < -VEL_CAP) then o.velx = -VEL_CAP end
+        if (o.velx > VEL_CAP) then o.velx = VEL_CAP end
+        if (o.vely < -VEL_CAP) then o.vely = -VEL_CAP end
+        if (o.vely > VEL_CAP) then o.vely = VEL_CAP end
         
         local intx = math.floor(o.cx)
         local inty = math.floor(o.cy)
@@ -51,13 +60,14 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local inty2 = math.floor(o.cy)
         local fx = o.cx % 1
         local fy = o.cy % 1
-
         
         local dx = intx2 - intx
         local dy = inty2 - inty
         
         -- TODO: FIX IF BOTH VALUES ARE NONZERO
-        assert(dx == 0 or dy == 0, "You can't move from one cell to a diagonally adjacent one in one frame")
+        -- cheap fix, doesn't work in a rare cases when passing through two adjacent portals
+        -- passing two cells diagonally at once
+        if dx ~= 0 and dy ~= 0 then dy = 0 end
         
         if dx==0 and dy == 0 then return self end
         
@@ -74,8 +84,6 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
         print(dir, rgtdir, dwndir)
         if (rgtdir ~= nextdir(dwndir)) then o.mirrored = not o.mirrored end
-        
-        print("mirrored", self.mirrored)
         
         fx,fy = transformOffset(fx,fy,dwndir,rgtdir)
         print(fx,fy)
@@ -96,6 +104,7 @@ end
 
 function makeplayer(cx, cy)
     local p = rigidbody(cx, cy, 0.25, 0.25, "player.png", 999, 0, 0, 2, DOWN);
+    p.typ = "makeplayer"
     
     p.onfloor = true
     --p.cx, p.cy = 2.5, 2.5
@@ -206,6 +215,7 @@ function collide(r1, r2)
 
             if math.abs(xoffset) < math.abs(yoffset) then       
                 local v = (r1.weight * r1.velx + r2.weight * r2.velx) / (r1.weight + r2.weight)
+                if r1.weight > 99999 or r2.weight > 99999 then v=0 end
                 r1.velx = v
                 r2.velx = v
 
@@ -222,6 +232,7 @@ function collide(r1, r2)
                 end
             else
                 local v = (r1.weight * r1.vely + r2.weight * r2.vely) / (r1.weight + r2.weight)
+                if r1.weight > 99999 or r2.weight > 99999 then v=0 end
                 r1.vely = v
                 r2.vely = v
 

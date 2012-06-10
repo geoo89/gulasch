@@ -22,7 +22,7 @@ function love.load()
     assert(gr.setMode(RESX, RESY), "Could not set screen mode")
     loadTextures()
     fieldInit()
-    isPaused = true
+    --isPaused = true
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
     ps:setEmissionRate(100)
@@ -66,6 +66,8 @@ function love.update(dt)
         return
     end
     
+    if (dt > 0.05) then dt = 0.05 end
+
     if mode == MODE.RENDER then
         objects = map(objects, function(o) return o:update(dt) end)
         
@@ -73,6 +75,7 @@ function love.update(dt)
             collidewall(v1)
         end
         --collidewall(player)
+    
 
         for i1,v1 in pairs(objects) do
             for i2,v2 in pairs(objects) do
