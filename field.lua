@@ -737,27 +737,6 @@ end
 
 function fieldInit()
     testfield = 1
-    
-    --field:get(3,2).colLeft = false
-    --field:get(3,2).colTop = false
-    --field:openPortal(3,1,2,2,UP,LEFT,LEFT,UP)
-    
-    --self connect, right to top
-    --field:openPortal(2,2,2,2,RIGHT,UP,UP,RIGHT)
-    --field:get(2,2).colTop = false
-    --field:get(3,2).colLeft = false
-    
-    --mobius strip:
-    --field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
-    --field:get(2,2).colTop = true
-    --field:get(3,2).colTop = true
-    --field:get(4,2).colTop = true
-    --field:get(5,2).colTop = true
-    --field:get(2,3).colTop = true
-    --field:get(3,3).colTop = true
-    --field:get(4,3).colTop = true
-    --field:get(5,3).colTop = true
-    --field:get(WINNINGX,WINNINGY).background = "goal.png"
 
     if testfield == 1 then
         field = DefaultField(20,20,true)
