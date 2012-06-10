@@ -19,6 +19,7 @@ PORTAL_FONT_SIZE = 30
 
 DEFAULT_WIDTH = 64
 DEFAULT_HEIGHT = 32
+DEFAULT_BACKGROUND = "DEFAULT.png"
 
 function transformOffset(x,y,downdir,rightdir)
     assertValidDir(rightdir)
@@ -81,7 +82,12 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     
     while(objgrav ~= DOWN) do
         objgrav = nextdir(objgrav)
-        angle = (angle + 1) % 4
+        
+        if(objmirr) then
+            angle = (angle + 3) % 4
+        else
+            angle = (angle + 1) % 4
+        end
     end
     
     if sx == 1 then
@@ -114,7 +120,7 @@ cellCount = 0
 
 function DefaultCell()
     local cell = {}
-    cell.background = "NONE.png";
+    cell.background = DEFAULT_BACKGROUND;
     cell.colTop    = false
     cell.colLeft   = false
     cell.portals = {};
@@ -266,6 +272,8 @@ function DefaultField(w,h)
         assertValidDir(up1)
         assertValidDir(side2)
         assertValidDir(up2)
+        
+        print(x1,y1,x2,y2,dirToStr(side1),dirToStr(up1),dirToStr(side2),dirToStr(up2))
         
         if(self:isBadPortalPosition(x1,y1,side1))
         or(self:isBadPortalPosition(x2,y2,side2)) then
@@ -495,7 +503,7 @@ function DefaultField(w,h)
         list[#list+1] = markerStar
         
         if(halfopen) then
-            local halfopenmarker = object(halfopen.xin+0.5, halfopen.yin+0.5, 0.5, 0.5, "portalmarker.png", PRIO_PORTAL)
+            local halfopenmarker = object(halfopen.xin+0.5, halfopen.yin+0.5, 0.5, 0.5, "portalmarker.png", PRIO_PORTAL + 5)
             halfopenmarker.grav = halfopen.side
             local cell = self:get(halfopen.xin,halfopen.yin)
             cell.objects[#cell.objects+1] = halfopenmarker
@@ -699,6 +707,18 @@ function DefaultField(w,h)
         
         f:write(-1, " ", -1, " ", "END_OF_WALLS\n\n")
         
+        f:write("SPECIAL_BACKGROUNDS\n")
+        for y = 1,self.height do
+            for x = 1,self.width do
+                local background = self:get(x,y).background
+                if background ~= DEFAULT_BACKGROUND then
+                    f:write(x, " ", y, " ", background, "\n")
+                end
+            end
+        end
+            
+        f:write(-1, " ", -1, " ", "END_OF_BACKGROUNDS\n\n")    
+        
         f:write("PORTALS\n")
         for y = 1,self.height do
             for x = 1,self.width do
@@ -794,6 +814,22 @@ function import(filename)
         
         if(dir ~= "END_OF_WALLS") then
             field:toggleWall(x,y,dirFromStr(dir))
+        else
+            break;
+        end
+    until false
+    
+    local x
+    local y
+    local background
+    expect("SPECIAL_BACKGROUNDS")
+    repeat
+        x = f:read("*number")
+        y = f:read("*number")
+        background = readString()
+        
+        if(background ~= "END_OF_BACKGROUNDS") then
+            field:get(x,y).background = background
         else
             break;
         end
