@@ -5,6 +5,8 @@ DOWN  = BOTTOM
 LEFT  =  2
 RIGHT = -2
 
+DIRS = { UP, DOWN, LEFT, RIGHT }
+
 CELLSIZE = 128
 WALLSIZE =   8
 WALLPERC =  WALLSIZE / CELLSIZE
@@ -125,9 +127,8 @@ end
 function Portal()
     local portal = {}
     --[[properties:
-        xin,yin,
         xout,yout,
-        sidein, sideout
+        sideout
         upin,upout]]
     return portal;
 end
@@ -249,21 +250,15 @@ function DefaultField(w,h,startWithWalls)
         assertValidDir(up2)
     
         local portal1   = Portal();
-        portal1.xin     = x1;
         portal1.xout    = x2;
-        portal1.yin     = y1;
         portal1.yout    = y2;
-        portal1.sidein  = side1;
         portal1.sideout = side2;
         portal1.upin   = up1;
         portal1.upout  = up2;
         
         local portal2   = Portal();
-        portal2.xin     = x2;
         portal2.xout    = x1;
-        portal2.yin     = y2;
         portal2.yout    = y1;
-        portal2.sidein  = side2;
         portal2.sideout = side1;
         portal2.upin    = up2;
         portal2.upout   = up1;
@@ -565,16 +560,14 @@ function DefaultField(w,h,startWithWalls)
     end
     
     function field:export(filename)
-        print"bla"
-        print(io.open(filename,"w"))
         io.output(io.open(filename,"w"))
         
-        
-        
-        io.write(self.width, " ", self.height, "\n")
+        writeProp("mapWidth",self.width)
+        writeProp("mapHeight", self.height)
         
         -- print list of non-walls
         for y = 1,self.height do
+            io.write("    ")
             for x = 1,self.width do
                 if(self:hasWall(x,y,TOP)) then
                     io.write(x, " ", y, " ", dirToStr(TOP), " ")
@@ -589,17 +582,49 @@ function DefaultField(w,h,startWithWalls)
         end
         
         io.write("\n", -1, " ", -1, " ", "END_OF_WALLS\n")
+        
+        for y = 1,self.height do
+            for x = 1,self.width do
+                local cell = self:get(x,y)
+                for _,e in pairs(DIRS) do
+                    if(cell.portals[dir]) then
+                        local portal = cell.portals[dir]
+                        
+                        if  portal.yout > y
+                        or (portal.yout == y and portal.xout > x)
+                        or (portal.yout == y and portal.xout == x and portal.sideout > dir) then
+                            io.write("    PORTAL "..x.." "..y.." "..portal.xout.." "..portal.yout.." "..dir.." "..portal.upin.." "..portal.sideout.." "..portal.upout.."\n")
+                        end
+                    end
+                end
+            end
+        end
+        
+        io.write("\nEND_OF_PORTALS\n")
+        
+        for k,o in pairs(objects) do
+            io.write(o.typ, "\n")
+            
+            for key,value in o do
+                writeProp("    "..key.." "..type(value).." "..value.."\n")
+            end
+            
+            io.write("END_OF_OBJECT")
+        end
+        
+        io.write("END_OF_MAP")
     end
     
     return field;
 end
 
 function import(filename)
-    io.input = filename
-    local w = io.read("*number")
-    local h = io.read("*number")
+    io.input = io.open(filename,"r")
+    local w = readProp("mapWidth")
+    local h = readProp("mapHeight")
     
-    local field = DefaultField(w,h)
+    field = DefaultField(w,h)
+    objects = {}
     
     local x
     local y
@@ -615,8 +640,53 @@ function import(filename)
             break;
         end
     until false
-end    
     
+    str = io.read(100)
+    while(str == "PORTAL") do
+        local x,y,xout,yout,dir,up,dirout,upout =
+            io.read("*number", "*number", "*number", "*number", "*number", "*number", "*number", "*number")
+        field:openPortal(x,y,xout,yout,dir,up,dirout,upout)
+    end
+    
+    if (str ~= "END_OF_PORTALS") then
+        error("Expected 'END_OF_PORTALS' but found '"..str.."'")
+    end
+    
+    local constructor = io.read(100)
+    
+    while(constructor ~= "END_OF_MAP") do
+        local o
+        loadstring("o = "..constructor.."()")
+        
+        local prop = io.read(100)
+        
+        while(prop ~= "END_OF_OBJECT") do
+            typname = io.read(100)
+            o[prop] = io.read("*"..typename)
+            local prop = io.read(100)
+        end
+        
+        objects[#objects+1] = o
+        constructor = io.read(100)
+    end
+end
+
+function writeProp(name,value)
+    io.write(name, " ", value, "\n")
+end
+
+function expect(name)
+    local str = io.read(100)
+    
+    if (str ~= name) then
+        error("Expected '"..name.."', but found '"..str.."'.")
+    end
+end
+
+function readProp(name)
+    expect(name)
+    return io.read("*number")
+end
 
 cx       = 500
 cy       = 500
@@ -687,6 +757,7 @@ function fieldInit()
     end
     
     field:export("blabla.map")
+    
     
     --field:get(3,3).colLeft = false
     --field:get(7,6).colLeft = false
