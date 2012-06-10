@@ -111,13 +111,11 @@ end
 
 cellCount = 0
 
-function DefaultCell(startWithWalls)
-    startWithWalls = startWithWalls or false
-
+function DefaultCell()
     local cell = {}
     cell.background = "NONE.png";
-    cell.colTop    = startWithWalls
-    cell.colLeft   = startWithWalls
+    cell.colTop    = false
+    cell.colLeft   = false
     cell.portals = {};
     cell.objects = {};
     cellCount = cellCount + 1
@@ -215,7 +213,7 @@ function nextdir(dir)
     end
 end
 
-function DefaultField(w,h,startWithWalls)
+function DefaultField(w,h)
     w = w or DEFAULT_WIDTH
     h = h or DEFAULT_HEIGHT
 
@@ -223,22 +221,33 @@ function DefaultField(w,h,startWithWalls)
     field.width  = w;
     field.height = h;
     field._cells = {};
-    field._defCell = DefaultCell(startWithWalls);
+    field._defCell = DefaultCell();
     
+    --one cell more to the left and bottom for the walls
     function defRow()
         local row = {};
-        for i = 1,field.width do
-            row[i] = DefaultCell(startWithWalls);
+        for i = 1,field.width+1 do
+            row[i] = DefaultCell();
         end
         return row;
     end
     
-    for i = 1,field.height do
+    for i = 1,field.height+1 do
         field._cells[i] = defRow();
     end
     
+    for x = 1,field.width+1 do
+        field._cells[1][x].colTop = true
+        field._cells[field.height+1][x].colTop = true
+    end
+    
+    for y = 1,field.height+1 do
+        field._cells[y][1].colLeft = true
+        field._cells[y][field.width+1].colLeft = true
+    end
+    
     function field:get(x,y)
-        if (x <= 0 or x > self.width or y <= 0 or y > self.height) then
+        if (x <= 0 or x > self.width + 1 or y <= 0 or y > self.height + 1) then
             return self._defCell;
         end
         return self._cells[y][x];
@@ -249,7 +258,14 @@ function DefaultField(w,h,startWithWalls)
         assertValidDir(up1)
         assertValidDir(side2)
         assertValidDir(up2)
-    
+        
+        if(field:hasWall(x1,y1,side1)) then
+            field:toggleWall(x1,y1,side1)
+        end
+        if(field:hasWall(x2,y2,side2)) then
+            field:toggleWall(x2,y2,side2)
+        end
+        
         local portal1   = Portal();
         portal1.xout    = x2;
         portal1.yout    = y2;
@@ -361,6 +377,18 @@ function DefaultField(w,h,startWithWalls)
     
     function field:toggleWall(x,y,dir)
         assertValidDir(dir)
+        
+        if(x == 1 and dir == LEFT)
+        or(y == 1 and dir == UP)
+        or(x == self.width and dir == RIGHT)
+        or(y == self.height and dir == DOWN) then
+            -- denied. You may not delete the border of the level
+            return
+        end
+        
+        
+        --destroy portals if there are any
+        field:destroyPortal(x,y,dir)
         local cell = self:get(x,y)
         
         if (dir == TOP) then
@@ -374,6 +402,20 @@ function DefaultField(w,h,startWithWalls)
             cell = self:get(x,y+1)
             cell.colTop = not cell.colTop
         end
+    end
+    
+    function field:destroyPortal(x,y,dir)
+        local cell   = self:get(x,y)
+        local portal = cell.portals[dir]
+        if(portal) then
+            cell.portals[dir] = nil
+            self:get(portal.xout,portal.yout).portals[portal.sideout] = nil
+        end
+    end
+    
+    function field:togglePortal(x,y,dir)
+        local portal = self:get(x,y).portals[dir]
+        if portal then portal.upin = -portal.upin end
     end
     
     function field:toggleWallStrip(x,y,dir,...)
@@ -416,9 +458,9 @@ function DefaultField(w,h,startWithWalls)
     
     function field:shadeEditor(offx, offy,hlx,hly,halfopen)
         local xmin, xmax, ymin, ymax
-        xmin = math.floor(math.max(1         , (-offx-WALLSIZE)     / CELLSIZE))
-        xmax = math.floor(math.min(self.width, (RESX-offx-WALLSIZE) / CELLSIZE))
-        ymin = math.floor(math.max(1         , (-offy-WALLSIZE)     / CELLSIZE))
+        xmin = math.floor(math.max(1          , (-offx-WALLSIZE)     / CELLSIZE))
+        xmax = math.floor(math.min(self.width , (RESX-offx-WALLSIZE) / CELLSIZE))
+        ymin = math.floor(math.max(1          , (-offy-WALLSIZE)     / CELLSIZE))
         ymax = math.floor(math.min(self.height, (RESY-offy-WALLSIZE) / CELLSIZE))
         
         self:collectObjects();
@@ -430,7 +472,7 @@ function DefaultField(w,h,startWithWalls)
         markerStar.cx = hlx + 0.5
         markerStar.cy = hly + 0.5
         local list = self:get(hlx,hly).objects
-        list[#list] = markerStar
+        list[#list+1] = markerStar
         
         if(halfopen) then
             local halfopenmarker = object(halfopen.xin+0.5, halfopen.yin+0.5, 0.5, 0.5, "portalmarker.png", PRIO_PORTAL)
@@ -660,7 +702,12 @@ function DefaultField(w,h,startWithWalls)
 end
 
 function import(filename)
-    local f = assert(io.open(filename, "r"))
+    local f = io.open(filename, "r")
+    
+    if not f then
+        field = DefaultField()
+        return
+    end
 
     function readString()
         local str
