@@ -64,32 +64,31 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     
     --Now I have the actual screen position the top left corner of the image is mapped to
     local sx = nextdir(downdir) == rightdir and 1 or -1
-    if(objmirr) then sx = -sx end
     
     physminx = cellx + CELLSIZE * math.min(xmin,xmax)
     physminy = celly + CELLSIZE * math.min(ymin,ymax)
     
-    local angle -- (* PI/2)
-    if (downdir == DOWN) then
-        angle = 0
-    elseif (downdir == UP) then
-        angle = 2
-    elseif (downdir == RIGHT) then
-        angle = 3
-    else
-        angle = 1
+    local angle = 0 -- (* PI/2)
+    while(downdir ~= DOWN) do
+        angle = (angle + 1) % 4
+        downdir = nextdir(downdir)
     end
     
+    local gravAngle = 0
     while(objgrav ~= DOWN) do
         objgrav = nextdir(objgrav)
-        
-        if(objmirr) then
-            angle = (angle + 3) % 4
-        else
-            angle = (angle + 1) % 4
-        end
+        gravAngle = (gravAngle + 1) % 4
     end
     
+    --careful: Turn in opposite direction in mirrored situation
+    if (sx == -1) then
+        gravAngle = (-gravAngle + 4) % 4
+    end
+    
+    angle = (angle + gravAngle) % 4
+    
+    --effectively not mirrored if mirrored twice 
+    if(objmirr) then sx = -sx end
     if sx == 1 then
         if (angle == 3) then
             physminy = physminy + dimx
@@ -275,6 +274,12 @@ function DefaultField(w,h)
         
         print(x1,y1,x2,y2,dirToStr(side1),dirToStr(up1),dirToStr(side2),dirToStr(up2))
         
+        --Prefer portals that point up, just because I
+        --dont wnat the graphic to be upside down all the time
+        if (up1 == DOWN or up2 == DOWN) then
+            up1,up2 = -up1,-up2
+        end
+        
         if(self:isBadPortalPosition(x1,y1,side1))
         or(self:isBadPortalPosition(x2,y2,side2)) then
             return
@@ -413,6 +418,9 @@ function DefaultField(w,h)
         
         --destroy portals if there are any
         field:destroyPortal(x,y,dir)
+        local dx,dy = dirtodxy(dir)
+        field:destroyPortal(x+dx,y+dy,-dir)
+        
         local cell = self:get(x,y)
         
         if (dir == TOP) then
@@ -526,7 +534,7 @@ function DefaultField(w,h)
                     if(cell.portals[dir]) then
                         local portal = cell.portals[dir]
                         local img = "portalin.png"
-                        local mirrored = false
+                        local mirrored = true --default mirror, because the graphic is drawn the wrong way
                         if  portal.yout > y
                         or (portal.yout == y and portal.xout > x)
                         or (portal.yout == y and portal.xout == x and portal.sideout >= dir) then
