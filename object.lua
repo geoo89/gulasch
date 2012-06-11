@@ -86,8 +86,11 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local wurst = 0
         local rgtdir
         local dwndir
-        
+        local oldgrav = o.grav
         newx, newy, wurst, o.grav = field:go(intx, inty, dir, o.grav)
+        if math.abs(oldgrav) ~= math.abs(o.grav) then
+            o.xrad, o.yrad = o.yrad, o.xrad
+        end
         newx, newy, wurst, rgtdir = field:go(intx, inty, dir, RIGHT)
         newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
         --print(dir, rgtdir, dwndir)
