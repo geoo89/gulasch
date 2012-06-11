@@ -229,6 +229,13 @@ function DefaultField(w,h)
     field._cells = {};
     field._defCell = DefaultCell();
     
+    player = makeplayer();
+    player.cx = 1.5
+    player.cy = 1.5
+    objects = { player }
+    
+    
+    
     --one cell more to the left and bottom for the walls
     function defRow()
         local row = {};
@@ -897,53 +904,5 @@ function import(filename)
 end
 
 function fieldInit()
-    testfield = 1
-
-    if testfield == 1 then
-        field = DefaultField(20,20,true)
-        player.cx = 2.5
-        player.cy = 2.5
-    
-        field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
-        field:get(3,2).colLeft = false
-        field:get(2,2).colLeft = false
-        field:get(4,2).colLeft = false
-        field:get(5,2).colLeft = false
-    elseif testfield == 2 then
-        field = DefaultField(20,20,true)
-        player.cx = 2.5
-        player.cy = 2.5
-        field:get(4,3).colTop = false;
-        field:get(4,2).colLeft = false;
-        field:get(3,2).colLeft = false;
-        field:get(2,3).colTop = false;
-        field:get(2,4).colTop = false;
-        field:get(3,4).colLeft = false;
-        field:get(4,4).colLeft = false;
-        field:get(4,5).colTop = false;
-        field:get(4,6).colTop = false;
-        field:get(4,6).colLeft = false;
-        field:get(3,6).colLeft = false;
-        field:get(2,6).colTop = false;
-    
-        field:get(5,6).colTop = false;
-        field:get(5,5).colTop = false;
-        field:get(6,4).colLeft = false;
-        field:get(7,4).colLeft = false;
-        field:get(7,4).colTop = false;
-        field:get(7,3).colTop = false;
-    
-        field:openPortal(2,6,5,5,TOP,RIGHT,BOTTOM,RIGHT)
-        field:openPortal(4,2,7,3,BOTTOM,RIGHT,TOP,RIGHT)
-    else
-        field = DefaultField()
-    end
-    
-    field:export("blabla.map")
-    import("blabla.map")
-    
-    --field:get(3,3).colLeft = false
-    --field:get(7,6).colLeft = false
-    
-    --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
+    field = DefaultField()
 end

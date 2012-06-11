@@ -203,14 +203,6 @@ function makeplayer(cx, cy)
     return p
 end
 
-player = makeplayer(1.5, 1.5)
-
-o1 = rigidbody(3.5, 2.5, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN)
-o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
-o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
-
-objects = {player, o1}
-
 function transformcollide(r1,r2,dx,dy)
     r2:movex(dx)
     r2:movey(dy)
