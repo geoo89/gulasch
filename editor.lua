@@ -1,3 +1,4 @@
+require 'archiver'
 require 'field'
 require 'object'
 
@@ -37,7 +38,7 @@ end
 -- Save current level
 function editor:saveLevel()
     print("Saving level " .. self.LEVEL_DIR .. self.level_list[self.level_idx]) 
-    field:export(self.LEVEL_DIR .. self.level_list[self.level_idx])
+    export(self.LEVEL_DIR .. self.level_list[self.level_idx])
 end
 
 -- Initialise editor --> load file list

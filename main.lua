@@ -6,7 +6,7 @@ require 'field'
 require 'object'
 require 'editor'
 require 'text'
---require 'field'
+require 'archiver'
 
 RESX=1366
 RESY=768
@@ -126,7 +126,7 @@ function love.keypressed(key, unicode)
             mode = MODE.EDITOR
         else
             editor.half_open = nil
-            field:export('current.txt')
+            export('current.txt')
             mode = MODE.RENDER
         end
     end
