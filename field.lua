@@ -256,7 +256,7 @@ function DefaultField(w,h)
         end
         
         for k,o in pairs(cell.objects) do
-            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
+            drawTileInCell(xmin,ymin, o.cx - x - o.xrad, o.cy - y - o.yrad, o.cx - x + o.xrad, o.cy - y + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
         end
     end
     
@@ -346,6 +346,10 @@ function DefaultField(w,h)
             local map = self:get(x,y).objects;
             --print("x:"..x..",y="..y)
             map[#map+1] = e;
+            
+            for k,s in pairs(e.Subobjects()) do
+                map[#map+1] = s;
+            end
         end
     end
     

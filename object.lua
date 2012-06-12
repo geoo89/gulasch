@@ -17,6 +17,31 @@ function object(cx, cy, xrad, yrad, img, z)
     o.img = img
     o.z = z or 0
     o.mirrored = false
+    o.grav = DOWN
+    
+    --Sekti: Objects should be able to maintain non-physical subobjects.
+    --example:
+        --Player has Eyes, Mouth.
+        --Chest could glow when they stand on a button
+        --Saw may have it's spinning blade as a different subobjects every frame
+        --Saw may want to spawn blood or wood-splinter particles
+        --You get the idea.
+        --These objects are NOT in the object table and will therefore never be in the editor or in a savegame.
+        --The effective z prio of any subobject o will be one plus the priority of the parent plus its own prio
+        --Position, zprio, grav etc of any subobject will be relative to the parent.
+    function o:Subobjects() return {} end
+    function o:placeSubobject(relx,rely)
+        local sub = object(self.cx, self.cy, self.xrad, self.yrad, nil, self.z + 1)
+        sub.grav = self.grav
+        sub.mirrored = self.mirrored
+        
+        dx, dy = dirtodxy(sub.grav)
+        sub.cx, sub.cy = sub.cx + dx * rely, sub.cy + dy * rely
+        
+        dx, dy = dirtodxy(mirrored and -nextdir(sub.grav) or nextdir(sub.grav))
+        sub.cx, sub.cy = sub.cx + dx * relx, sub.cy + dy * relx
+        return sub
+    end
     
     function o:update() return self end
     
@@ -126,6 +151,34 @@ function makeplayer(cx, cy)
     --p.z = 999
     --p.img = "player.png"
     
+    --player eyes and mouth
+    
+    p.Subobjects = function(self)
+        local pupils = p:placeSubobject(0, 0)
+        pupils.img = "pupils_centered.png"
+        local mouth = p:placeSubobject(0, 0)
+        
+        local dx, dy = 0, 0
+        local downx, downy = dirtodxy(p.grav)
+        
+        fact = math.sqrt(p.velx*p.velx + p.vely*p.vely)
+        if (math.abs(fact) > 0.0001) then
+            dx   = 0.025 * p.velx / fact
+            dy   = 0.025 * p.vely / fact
+            
+            pupils.cx, pupils.cy = pupils.cx + dx, pupils.cy + dy
+        end
+        
+        if (p.onfloor or (dx == 0 and dy == 0)) then
+            mouth.img = "mouth_standing.png"
+        elseif (downx ~= 0 and downx * dx > 0) or (downy * dy > 0) then
+            mouth.img = "mouth_worried.png"
+        else
+            mouth.img = "mouth_excited.png"
+        end
+            
+        return {pupils, mouth}
+    end
     
     -- TODO: KEY TO GRAB CRATE
     function p:move(dt)
