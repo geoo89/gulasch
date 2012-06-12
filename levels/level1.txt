@@ -1,11 +1,11 @@
 mapWidth 64
 mapHeight 32
     1 1 UP 1 1 LEFT 2 1 UP 3 1 UP 4 1 UP 4 1 LEFT 5 1 UP 6 1 UP 7 1 UP 8 1 UP 9 1 UP 10 1 UP 11 1 UP 12 1 UP 13 1 UP 14 1 UP 15 1 UP 16 1 UP 17 1 UP 18 1 UP 19 1 UP 20 1 UP 21 1 UP 22 1 UP 23 1 UP 24 1 UP 25 1 UP 26 1 UP 27 1 UP 28 1 UP 29 1 UP 30 1 UP 31 1 UP 32 1 UP 33 1 UP 34 1 UP 35 1 UP 36 1 UP 37 1 UP 38 1 UP 39 1 UP 40 1 UP 41 1 UP 42 1 UP 43 1 UP 44 1 UP 45 1 UP 46 1 UP 47 1 UP 48 1 UP 49 1 UP 50 1 UP 51 1 UP 52 1 UP 53 1 UP 54 1 UP 55 1 UP 56 1 UP 57 1 UP 58 1 UP 59 1 UP 60 1 UP 61 1 UP 62 1 UP 63 1 UP 64 1 UP 
-    1 2 LEFT 2 2 LEFT 4 2 LEFT 
-    1 3 LEFT 2 3 UP 
-    1 4 LEFT 
-    1 5 LEFT 
-    1 6 LEFT 
+    1 2 LEFT 2 2 UP 2 2 LEFT 4 2 LEFT 6 2 LEFT 7 2 LEFT 
+    1 3 LEFT 2 3 UP 3 3 UP 4 3 UP 4 3 LEFT 5 3 UP 7 3 LEFT 
+    1 4 UP 1 4 LEFT 2 4 UP 3 4 LEFT 4 4 LEFT 5 4 UP 5 4 LEFT 6 4 UP 
+    1 5 LEFT 2 5 UP 4 5 LEFT 
+    1 6 UP 1 6 LEFT 2 6 UP 3 6 UP 
     1 7 LEFT 
     1 8 LEFT 
     1 9 LEFT 
@@ -38,18 +38,19 @@ SPECIAL_BACKGROUNDS
 -1 -1 END_OF_BACKGROUNDS
 
 PORTALS
-    PORTAL 2 1 3 2 2 1 -1 2
+    PORTAL 3 1 6 2 -1 -2 1 -2
+    PORTAL 4 4 1 5 -1 -2 1 -2
 END_OF_PORTALS
 
 makeplayer
     img string player.png
-    weight number 2
-    grav number -1
-    onfloor boolean true
-    mirrored boolean false
-    cy number 2.5
-    cx number 2.5
     velx number 0
+    grav number -1
+    mirrored boolean false
+    cx number 2.5859375
+    cy number 1.4375
+    onfloor boolean true
+    weight number 2
     vely number 0
     z number 999
     xrad number 0.25
@@ -59,17 +60,17 @@ makeplayer
 END_OF_OBJECT
 rigidbody
     img string crate.png
-    weight number 1
+    velx number 0
     grav number -1
     typ string rigidbody
     cy number 2.5
-    cx number 3.5
     xrad number 0.125
+    cx number 3.5
     vely number 0
     z number 50
     rigid boolean true
     yrad number 0.125
     mirrored boolean false
-    velx number 0
+    weight number 1
 END_OF_OBJECT
 END_OF_MAP

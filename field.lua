@@ -231,6 +231,10 @@ function DefaultField(w,h)
     end
     
     function field:shadeCell(x,y,xmin,ymin,downdir,rightdir,brightness)
+        -- brightness adjustment:
+        brightness = brightness/255
+        brightness = brightness*brightness*255
+    
         -- rightdir: Direction the physically right side of the cell is faced to
         -- downdir:  Direction the physically down  side of the cell is faced to
         local cell = self:get(x,y)
@@ -456,7 +460,7 @@ function DefaultField(w,h)
         local cellx = math.floor(player.cx)
         local celly = math.floor(player.cy)
         
-        function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir)
+        function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir, hitx, hity)
             local node = {}
             assertValidDir(downdir)
             assertValidDir(rightdir)
@@ -467,6 +471,8 @@ function DefaultField(w,h)
             node.stepsleft = stepsleft
             node.downdir   = downdir
             node.rightdir  = rightdir
+            node.hitx      = hitx
+            node.hity      = hity
             return node
         end
         
@@ -486,7 +492,7 @@ function DefaultField(w,h)
         px = px - ox * CELLSIZE
         py = py - oy * CELLSIZE
         
-        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, playerright)
+        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, playerright, ox, oy)
         
         local next   = 0
         local writer = 1
@@ -522,25 +528,25 @@ function DefaultField(w,h)
                     
                     if(not field:hasWall(node.logx,node.logy,-node.rightdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.rightdir,node.downdir)
-                        toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - 1, newother, -newdir)
+                        toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - node.hitx, newother, -newdir, 1, node.hity)
                         writer = writer + 1
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,node.rightdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.rightdir,node.downdir)
-                        toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - 1, newother,  newdir)
+                        toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - (1 - node.hitx), newother,  newdir, 0, node.hity)
                         writer = writer + 1
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,node.downdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.downdir, node.rightdir)
-                        toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, newdir,  newother)
+                        toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - (1 - node.hity), newdir,  newother, node.hitx, 0)
                         writer = writer + 1
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,-node.downdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.downdir, node.rightdir)
-                        toDo[writer] = toDoNode(node.screenx, node.screeny - 1, newx, newy, node.stepsleft - 1, -newdir,  newother)
+                        toDo[writer] = toDoNode(node.screenx, node.screeny - 1, newx, newy, node.stepsleft - node.hity, -newdir,  newother, node.hitx, 1)
                         writer = writer + 1
                     end
                 end
