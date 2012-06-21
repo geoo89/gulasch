@@ -1,11 +1,5 @@
 require 'field'
-
-JUMP_STRENGTH = 6
-GRAV_STRENGTH = 2
-AIR_ACCEL = 1
-FLOOR_SPEED = 1
-VEL_CAP = 4
-FRICTION = 4
+require 'constants'
 
 function object(cx, cy, xrad, yrad, img, z)
     local o = {}
@@ -79,10 +73,18 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
     
     --use this routines to move objects, never modify cx and cy directly
     function o.movex(self, dx)
+        if math.abs(dx) > 1 then
+            dx=1
+            print("warning, dx = "..dx)
+        end
         o:moverel(dx,0)
     end
 
     function o.movey(self, dy)
+        if math.abs(dy) > 1 then
+            dy=1
+            print("warning, dy = "..dy)
+        end
         o:moverel(0,dy)
     end
     
@@ -102,22 +104,25 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local dx = intx2 - intx
         local dy = inty2 - inty
         
-        if dx==0 and dy == 0 then return self end
+        if dx == 0 and dy == 0 then return nil end
+        
+        assert(dx==0 or dy == 0, "shitty direction"..dx..dy);
+        assert(math.abs(dx) == 1 or math.abs(dy) == 1, "shitty direction"..dx..dy);
         
         --print("dx",dx,dy)
         --print(fx,fy)
         
         local dir = dxytodir(dx,dy)
-        local wurst = 0
+        local ndir
         local rgtdir
         local dwndir
         local oldgrav = o.grav
-        newx, newy, wurst, o.grav = field:go(intx, inty, dir, o.grav)
+        newx, newy, ndir, o.grav = field:go(intx, inty, dir, o.grav)
         if math.abs(oldgrav) ~= math.abs(o.grav) then
             o.xrad, o.yrad = o.yrad, o.xrad
         end
-        newx, newy, wurst, rgtdir = field:go(intx, inty, dir, RIGHT)
-        newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
+        newx, newy, ndir, rgtdir = field:go(intx, inty, dir, RIGHT)
+        newx, newy, ndir, dwndir = field:go(intx, inty, dir, DOWN)
         --print(dir, rgtdir, dwndir)
         if (rgtdir ~= nextdir(dwndir)) then o.mirrored = not o.mirrored end
         
@@ -132,7 +137,7 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         o.velx = vx - 0.5
         o.vely = vy - 0.5
         
-        return self
+        return ndir
     end
 
     return o
@@ -260,17 +265,27 @@ function makeplayer(cx, cy)
 end
 
 function transformcollide(r1,r2,dx,dy)
-    r2:movex(dx)
-    r2:movey(dy)
+    local dirx = r2:moverel(dx,0)
+    local diry = r2:moverel(0,dy)
+    --r2:movex(dx)
+    --r2:movey(dy)
     if math.floor(r1.cx) == math.floor(r2.cx) and math.floor(r1.cy) == math.floor(r2.cy) then
-    r2.cx = r2.cx - dx
-    r2.cy = r2.cy - dy
+        r2.cx = r2.cx - dx
+        r2.cy = r2.cy - dy
         collide1(r1,r2)
-    r2.cy = r2.cy + dy
-    r2.cx = r2.cx + dx
+        r2.cy = r2.cy + dy
+        r2.cx = r2.cx + dx
     end
-    r2:movey(-dy)
-    r2:movex(-dx)
+    --r2:movey(-dy)
+    --r2:movex(-dx)
+    if diry ~= nil then
+        ndx, ndy = dirtodxy(diry)
+        r2:moverel(-ndx,-ndy)
+    end
+    if dirx ~= nil then
+        ndx, ndy = dirtodxy(dirx)
+        r2:moverel(-ndx,-ndy)
+    end
 end
 
 function collide(r1,r2)
@@ -425,12 +440,12 @@ function collidecell(r, nx, ny)
     
     if curcell.colTop == true then
         local wall = rigidbody(nx+0.5, ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
-        collide(r,wall)
+        collide1(r,wall)
     end
 
     if curcell.colLeft == true then
         local wall = rigidbody(nx, ny+0.5, WALLPERC, 0.5+WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
-        collide(r,wall)
+        collide1(r,wall)
     end
 end
 

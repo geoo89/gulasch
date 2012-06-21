@@ -8,7 +8,7 @@ require 'editor'
 require 'text'
 require 'archiver'
 
-RESX=1366
+RESX=1024
 RESY=768
 
 MODE = {
@@ -25,7 +25,7 @@ function love.load()
     fieldInit()
     editor:init()
     text:init()
-    --isPaused = true
+    isPaused = false
     
     ps = gr.newParticleSystem(textures["particle.png"], 32)
     ps:setEmissionRate(100)
@@ -118,7 +118,11 @@ function love.keypressed(key, unicode)
         os.exit()
     end
 
-    isPaused = false
+    if (key == 'p') then
+        if mode == MODE.RENDER then
+            isPaused = not isPaused
+        end
+    end
     
     if (key == 'e') then
         if mode == MODE.RENDER then
