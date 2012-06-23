@@ -308,15 +308,27 @@ function transformcollide(r1,dx,dy)
 end
 
 function collide(r1)
+    local intx, inty = math.floor(r1.cx), math.floor(r1.cy);
+    local cell = field:get(intx,inty)
+    
     transformcollide(r1, 0, 0)
-    transformcollide(r1, 1, 0)
-    transformcollide(r1, 0, 1)
-    transformcollide(r1,-1, 0)
-    transformcollide(r1, 0,-1)
-    transformcollide(r1, 1, 1)
-    transformcollide(r1,-1, 1)
-    transformcollide(r1,-1,-1)
-    transformcollide(r1, 1,-1)
+    
+    for _,dir in pairs(DIRS) do
+        if (not field:hasWall(intx,inty,dir)) then
+            local dx,dy = dirtodxy(dir)
+            transformcollide(r1, dx, dy);
+            
+            if(dir == LEFT or dir == RIGHT) then
+                local intx2,inty2,newdir,up = field:go(intx,inty,dir,UP);
+                if (not field:hasWall(intx2,inty2,up)) then
+                    transformcollide(r1, dx, 1)
+                end    
+                if (not field:hasWall(intx2,inty2,-up)) then
+                    transformcollide(r1, dx, -1)
+                end
+            end
+        end
+    end
 end
 
 -- assumes both items are in the same coordinate system
