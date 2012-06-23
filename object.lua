@@ -74,9 +74,11 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         
         self.onfloor = false;
         
-        for i1,v1 in pairs(objects) do
-            if (self ~= v1) then collide(self,v1) end
-        end
+--        for i1,v1 in pairs(objects) do
+--            if (self ~= v1) then collide(self,v1) end
+--        end
+
+        collide(self)
         
         collidewall(self)
         
@@ -276,40 +278,45 @@ function makeplayer(cx, cy)
     return p
 end
 
-function transformcollide(r1,r2,dx,dy)
-    local dirx = r2:moverel(dx,0)
-    local diry = r2:moverel(0,dy)
-    --r2:movex(dx)
-    --r2:movey(dy)
-    if math.floor(r1.cx) == math.floor(r2.cx) and math.floor(r1.cy) == math.floor(r2.cy) then
-        r2.cx = r2.cx - dx
-        r2.cy = r2.cy - dy
-        collide1(r1,r2)
-        r2.cy = r2.cy + dy
-        r2.cx = r2.cx + dx
+function transformcollide(r1,dx,dy)
+    local dirx = r1:moverel(dx,0)
+    local diry = r1:moverel(0,dy)
+    --r1:movex(dx)
+    --r1:movey(dy)
+    for i2,r2 in pairs(objects) do
+        if (r1 ~= r2) then
+            if math.floor(r1.cx) == math.floor(r2.cx) and math.floor(r1.cy) == math.floor(r2.cy) then
+                r1.cx = r1.cx - dx
+                r1.cy = r1.cy - dy
+                collide1(r1,r2)
+                r1.cy = r1.cy + dy
+                r1.cx = r1.cx + dx
+            end
+        end
     end
-    --r2:movey(-dy)
-    --r2:movex(-dx)
+
+    --r1:movey(-dy)
+    --r1:movex(-dx)
     if diry ~= nil then
         ndx, ndy = dirtodxy(diry)
-        r2:moverel(-ndx,-ndy)
+        r1:moverel(-ndx,-ndy)
     end
     if dirx ~= nil then
         ndx, ndy = dirtodxy(dirx)
-        r2:moverel(-ndx,-ndy)
+        r1:moverel(-ndx,-ndy)
     end
 end
 
-function collide(r1,r2)
-    transformcollide(r1,r2, 0, 0)
-    transformcollide(r1,r2, 1, 0)
-    transformcollide(r1,r2, 0, 1)
-    transformcollide(r1,r2,-1, 0)
-    transformcollide(r1,r2, 0,-1)
-    transformcollide(r1,r2, 1, 1)
-    transformcollide(r1,r2,-1, 1)
-    transformcollide(r1,r2,-1,-1)
-    transformcollide(r1,r2, 1,-1)
+function collide(r1)
+    transformcollide(r1, 0, 0)
+    transformcollide(r1, 1, 0)
+    transformcollide(r1, 0, 1)
+    transformcollide(r1,-1, 0)
+    transformcollide(r1, 0,-1)
+    transformcollide(r1, 1, 1)
+    transformcollide(r1,-1, 1)
+    transformcollide(r1,-1,-1)
+    transformcollide(r1, 1,-1)
 end
 
 -- assumes both items are in the same coordinate system
