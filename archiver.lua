@@ -12,11 +12,11 @@ function export(filename)
     for y = 1,field.height do
         f:write("    ")
         for x = 1,field.width do
-            if(field:hasWall(x,y,TOP)) then
+            if(field:hasWall(x,y,TOP,true)) then
                 f:write(x, " ", y, " ", dirToStr(TOP), " ")
             end
             
-            if(field:hasWall(x,y,LEFT)) then
+            if(field:hasWall(x,y,LEFT,true)) then
                 f:write(x, " ", y, " ", dirToStr(LEFT), " ")
             end
         end

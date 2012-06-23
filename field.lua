@@ -136,13 +136,6 @@ function DefaultField(w,h)
         return self._cells[y][x];
     end
     
-    function field:isBadPortalPosition(x,y,dir)
-        return (x == 1 and dir == LEFT)
-        or(x == field.width and dir == RIGHT)
-        or(y == 1 and dir == UP)
-        or(y == field.height and dir == BOTTOM)
-    end
-    
     function field:openPortal(x1,y1,x2,y2, side1, up1, side2, up2)
         assertValidDir(side1)
         assertValidDir(up1)
@@ -157,20 +150,8 @@ function DefaultField(w,h)
             up1,up2 = -up1,-up2
         end
         
-        if(self:isBadPortalPosition(x1,y1,side1))
-        or(self:isBadPortalPosition(x2,y2,side2)) then
-            return
-        end
-        
         field:destroyPortal(x1,y1,side1)
         field:destroyPortal(x2,y2,side2)
-        
-        if(field:hasWall(x1,y1,side1)) then
-            field:toggleWall(x1,y1,side1)
-        end
-        if(field:hasWall(x2,y2,side2)) then
-            field:toggleWall(x2,y2,side2)
-        end
         
         local portal1   = Portal();
         portal1.xout    = x2;
@@ -267,11 +248,11 @@ function DefaultField(w,h)
         end
     end
     
-    function field:hasWall(x,y,dir)
+    function field:hasWall(x,y,dir, physical)
         assertValidDir(dir)
         local cell = self:get(x,y)
         
-        if(cell.portals[dir]) then
+        if(cell.portals[dir] and not physical) then
             return false
         end
         
@@ -301,10 +282,6 @@ function DefaultField(w,h)
         
         
         --destroy portals if there are any
-        field:destroyPortal(x,y,dir)
-        local dx,dy = dirtodxy(dir)
-        field:destroyPortal(x+dx,y+dy,-dir)
-        
         local cell = self:get(x,y)
         
         if (dir == TOP) then
@@ -560,8 +537,3 @@ function DefaultField(w,h)
     return field;
 end
 
-
-
-function fieldInit()
-    field = DefaultField()
-end

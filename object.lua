@@ -74,6 +74,12 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         
         self.onfloor = false;
         
+        for i1,v1 in pairs(objects) do
+            if (self ~= v1) then collide(self,v1) end
+        end
+        
+        collidewall(self)
+        
         return self
     end
     
@@ -234,7 +240,7 @@ function makeplayer(cx, cy)
         if kb.isDown('left') then
             if self.onfloor then
                 if x_floor ~= 0 then
-                    self.velx = -FLOOR_SPEED * x_floor
+                    self.velx = -FLOOR_SPEED * x_floor -- math.min(FLOOR_SPEED, math.abs(self.velx) + dt * FLOOR_ACCEL)
                 end
                 if y_floor ~= 0 then
                     self.vely = -FLOOR_SPEED * y_floor
@@ -307,6 +313,8 @@ function collide(r1,r2)
 end
 
 -- assumes both items are in the same coordinate system
+-- r2 will not be moved, its velocities may be affected though
+-- r1 may be moved out of the range of r2
 function collide1(r1, r2)
     if (r1.rigid and r2.rigid) then
         
@@ -319,10 +327,10 @@ function collide1(r1, r2)
     
         if (math.abs(r1.cx - r2.cx) <= r1.xrad + r2.xrad and math.abs(r1.cy - r2.cy) <= r1.yrad + r2.yrad) then
 
-            local xoffset = (math.abs(r1.cx - r2.cx) - (r1.xrad + r2.xrad))/2 -- is negative
-            local yoffset = (math.abs(r1.cy - r2.cy) - (r1.yrad + r2.yrad))/2 -- is negative
+            local xoffset = math.abs(r1.cx - r2.cx) - (r1.xrad + r2.xrad) -- is negative
+            local yoffset = math.abs(r1.cy - r2.cy) - (r1.yrad + r2.yrad) -- is negative
             
-            local dt = 0.02
+            --local dt = 0.02
 
             --print(xoffset, yoffset)
             -- adding offset should check whether a border is crossed and should be done last
@@ -341,7 +349,7 @@ function collide1(r1, r2)
                         r1.onfloor = true
                         if (r1.weight < 99999) then friction = friction + r1.weight end
                     end
-                    r2:movex(-xoffset) -- cx gets increased (r2 moves right)
+                    --r2:movex(-xoffset) -- cx gets increased (r2 moves right)
                     if r2.grav == LEFT then
                         r2.onfloor = true
                         if (r2.weight < 99999) then friction = friction + r2.weight end
@@ -352,7 +360,7 @@ function collide1(r1, r2)
                         r1.onfloor = true
                         if (r1.weight < 99999) then friction = friction + r1.weight end
                     end
-                    r2:movex(xoffset) -- cx gets increased (r2 moves left)
+                    --r2:movex(xoffset) -- cx gets increased (r2 moves left)
                     if r2.grav == RIGHT then
                         r2.onfloor = true
                         if (r2.weight < 99999) then friction = friction + r2.weight end
@@ -395,7 +403,7 @@ function collide1(r1, r2)
                         r1.onfloor = true
                         if (r1.weight < 99999) then friction = friction + r1.weight end
                     end
-                    r2:movey(-yoffset) -- cy gets increased (r2 moves down)
+                    --r2:movey(-yoffset) -- cy gets increased (r2 moves down)
                     if r2.grav == UP then
                         r2.onfloor = true
                         if (r2.weight < 99999) then friction = friction + r2.weight end
@@ -407,7 +415,7 @@ function collide1(r1, r2)
                         r1.onfloor = true
                         if (r1.weight < 99999) then friction = friction + r1.weight end
                     end
-                    r2:movey(yoffset) -- cy gets increased (r2 moves up)
+                    --r2:movey(yoffset) -- cy gets increased (r2 moves up)
                     if r2.grav == DOWN then
                         r2.onfloor = true
                         if (r2.weight < 99999) then friction = friction + r2.weight end
@@ -438,19 +446,27 @@ function collide1(r1, r2)
     end
 end
 
-fieldInit()
-
 function collidecell(r, nx, ny)
     
     local curcell = field:get(nx,ny)
     
-    if curcell.colTop == true then
+    if field:hasWall(nx,ny,TOP) then
         local wall = rigidbody(nx+0.5, ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
         collide1(r,wall)
     end
+    
+    if field:hasWall(nx,ny,RIGHT) then
+        local wall = rigidbody(nx + 1, ny+0.5, WALLPERC, 0.5 + WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
+        collide1(r,wall)
+    end
 
-    if curcell.colLeft == true then
+    if field:hasWall(nx,ny,LEFT) then
         local wall = rigidbody(nx, ny+0.5, WALLPERC, 0.5+WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
+        collide1(r,wall)
+    end
+    
+    if field:hasWall(nx,ny,DOWN) then
+        local wall = rigidbody(nx+0.5, 1+ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
         collide1(r,wall)
     end
 end
@@ -461,25 +477,24 @@ function collidewall(r)
     
     -- TODO: TAKE NEW ORIENTATION INTO ACCOUNT
     collidecell(r, wx, wy)
-    nx,ny = field:go(wx,wy,DOWN)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,UP)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,LEFT)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,RIGHT)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,RIGHT)
-    nx,ny = field:go(nx,ny,UP)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,RIGHT)
-    nx,ny = field:go(nx,ny,DOWN)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,LEFT)
-    nx,ny = field:go(nx,ny,DOWN)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,LEFT)
-    nx,ny = field:go(nx,ny,UP)
-    collidecell(r, nx, ny)
     
+    if(not field:hasWall(wx,wy,DOWN)) then
+        nx,ny = field:go(wx,wy,DOWN)
+        collidecell(r, nx, ny)
+    end
+    
+    if(not field:hasWall(wx,wy,UP)) then
+        nx,ny = field:go(wx,wy,UP)
+        collidecell(r, nx, ny)
+    end
+    
+    if(not field:hasWall(wx,wy,LEFT)) then
+        nx,ny = field:go(wx,wy,LEFT)
+        collidecell(r, nx, ny)
+    end
+    
+    if(not field:hasWall(wx,wy,RIGHT)) then
+        nx,ny = field:go(wx,wy,RIGHT)
+        collidecell(r, nx, ny)
+    end
 end

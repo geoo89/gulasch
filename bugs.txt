@@ -1,3 +1,12 @@
-- Springen nach Fallen
-- Portal rechts statt links angezeigt
+Bugs:
+-Kisten fallen durch falsche Portale
+-Von Kiste an die Wand drücken, Spieler rutsch nur sehr langsam.
 
+Probleme:
+-Mangelnde Kontrolle beim runterlaufen von Kante (Geschwindigkeit zu groß)
+-Flackern der Wand (Wand relativ zu Hintergrund verschiebt sich)
+
+Features die toll wären:
+-Toolbox zum Auswählen zum Objekten, die gesetzt werden soll
+-Musik
+-Sounds

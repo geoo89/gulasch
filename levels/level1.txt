@@ -35,10 +35,26 @@ mapHeight 32
 -1 -1 END_OF_WALLS
 
 SPECIAL_BACKGROUNDS
+4 1 goal.png
+5 1 goal.png
+6 1 goal.png
+2 2 goal.png
+3 2 goal.png
+4 2 goal.png
+5 2 goal.png
+1 4 goal.png
+2 4 goal.png
+5 4 goal.png
+6 4 goal.png
+4 5 goal.png
+5 5 goal.png
+6 5 goal.png
 -1 -1 END_OF_BACKGROUNDS
 
 PORTALS
     PORTAL 3 1 6 2 -1 -2 1 -2
+    PORTAL 6 1 3 2 -1 2 1 2
+    PORTAL 1 4 4 5 -1 -2 1 -2
     PORTAL 4 4 1 5 -1 -2 1 -2
 END_OF_PORTALS
 
@@ -64,10 +80,25 @@ rigidbody
     cy number 3.578125
     cx number 3.40625
     grav number -1
+    typ string rigidbody
+    cy number 1.5703125
+    cx number 1.78125
+    xrad number 0.125
+    vely number 0
+    z number 50
+    rigid boolean true
+    yrad number 0.125
     mirrored boolean false
     weight number 1
-    rigid boolean true
+END_OF_OBJECT
+rigidbody
+    img string crate.png
     velx number 0
+    grav number -1
+    typ string rigidbody
+    cy number 2.5934375
+    xrad number 0.125
+    cx number 3.46875
     vely number 0
     z number 50
     xrad number 0.125

@@ -116,6 +116,11 @@ end
 
 -- Set portal
 function editor:setPortal(dir) 
+    if (field:get(self.selectx, self.selecty).portals[dir]) then
+        field:destroyPortal(self.selectx, self.selecty, dir)
+        return
+    end
+
     if (self.half_open) then
         --note: Non-mirroring portals are preferred
         field:openPortal(self.half_open.xin, self.half_open.yin, self.selectx, self.selecty,
