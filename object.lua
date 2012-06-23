@@ -17,6 +17,31 @@ function object(cx, cy, xrad, yrad, img, z)
     o.img = img
     o.z = z or 0
     o.mirrored = false
+    o.grav = DOWN
+    
+    --Sekti: Objects should be able to maintain non-physical subobjects.
+    --example:
+        --Player has Eyes, Mouth.
+        --Chest could glow when they stand on a button
+        --Saw may have it's spinning blade as a different subobjects every frame
+        --Saw may want to spawn blood or wood-splinter particles
+        --You get the idea.
+        --These objects are NOT in the object table and will therefore never be in the editor or in a savegame.
+        --The effective z prio of any subobject o will be one plus the priority of the parent plus its own prio
+        --Position, zprio, grav etc of any subobject will be relative to the parent.
+    function o:Subobjects() return {} end
+    function o:placeSubobject(relx,rely)
+        local sub = object(self.cx, self.cy, self.xrad, self.yrad, nil, self.z + 1)
+        sub.grav = self.grav
+        sub.mirrored = self.mirrored
+        
+        dx, dy = dirtodxy(sub.grav)
+        sub.cx, sub.cy = sub.cx + dx * rely, sub.cy + dy * rely
+        
+        dx, dy = dirtodxy(mirrored and -nextdir(sub.grav) or nextdir(sub.grav))
+        sub.cx, sub.cy = sub.cx + dx * relx, sub.cy + dy * relx
+        return sub
+    end
     
     function o:update() return self end
     
@@ -46,15 +71,28 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         if (o.vely < -VEL_CAP) then o.vely = -VEL_CAP end
         if (o.vely > VEL_CAP) then o.vely = VEL_CAP end
         
+        o:movex(o.velx * dt)
+        o:movey(o.vely * dt)
+        
+        return self
+    end
+    
+    --use this routines to move objects, never modify cx and cy directly
+    function o.movex(self, dx)
+        o:moverel(dx,0)
+    end
+
+    function o.movey(self, dy)
+        o:moverel(0,dy)
+    end
+    
+    -- either dx or dy must be 0
+    function o.moverel(self,dx,dy)
         local intx = math.floor(o.cx)
         local inty = math.floor(o.cy)
-
-        if intx == WINNINGX and inty == WINNINGY and (not (self == player))
-            then WON = true
-        end
         
-        o.cx = o.cx + o.velx * dt
-        o.cy = o.cy + o.vely * dt
+        o.cx = o.cx + dx
+        o.cy = o.cy + dy
         
         local intx2 = math.floor(o.cx)
         local inty2 = math.floor(o.cy)
@@ -64,29 +102,27 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         local dx = intx2 - intx
         local dy = inty2 - inty
         
-        -- TODO: FIX IF BOTH VALUES ARE NONZERO
-        -- cheap fix, doesn't work in a rare cases when passing through two adjacent portals
-        -- passing two cells diagonally at once
-        if dx ~= 0 and dy ~= 0 then dy = 0 end
-        
         if dx==0 and dy == 0 then return self end
         
-        print("dx",dx,dy)
-        print(fx,fy)
+        --print("dx",dx,dy)
+        --print(fx,fy)
         
         local dir = dxytodir(dx,dy)
         local wurst = 0
         local rgtdir
         local dwndir
-        
+        local oldgrav = o.grav
         newx, newy, wurst, o.grav = field:go(intx, inty, dir, o.grav)
+        if math.abs(oldgrav) ~= math.abs(o.grav) then
+            o.xrad, o.yrad = o.yrad, o.xrad
+        end
         newx, newy, wurst, rgtdir = field:go(intx, inty, dir, RIGHT)
         newx, newy, wurst, dwndir = field:go(intx, inty, dir, DOWN)
-        print(dir, rgtdir, dwndir)
+        --print(dir, rgtdir, dwndir)
         if (rgtdir ~= nextdir(dwndir)) then o.mirrored = not o.mirrored end
         
         fx,fy = transformOffset(fx,fy,dwndir,rgtdir)
-        print(fx,fy)
+        --print(fx,fy)
         o.cx = newx + fx
         o.cy = newy + fy
         
@@ -115,6 +151,34 @@ function makeplayer(cx, cy)
     --p.z = 999
     --p.img = "player.png"
     
+    --player eyes and mouth
+    
+    p.Subobjects = function(self)
+        local pupils = p:placeSubobject(0, 0)
+        pupils.img = "pupils_centered.png"
+        local mouth = p:placeSubobject(0, 0)
+        
+        local dx, dy = 0, 0
+        local downx, downy = dirtodxy(p.grav)
+        
+        fact = math.sqrt(p.velx*p.velx + p.vely*p.vely)
+        if (math.abs(fact) > 0.0001) then
+            dx   = 0.025 * p.velx / fact
+            dy   = 0.025 * p.vely / fact
+            
+            pupils.cx, pupils.cy = pupils.cx + dx, pupils.cy + dy
+        end
+        
+        if (p.onfloor or (dx == 0 and dy == 0)) then
+            mouth.img = "mouth_standing.png"
+        elseif (downx ~= 0 and downx * dx > 0) or (downy * dy > 0) then
+            mouth.img = "mouth_worried.png"
+        else
+            mouth.img = "mouth_excited.png"
+        end
+            
+        return {pupils, mouth}
+    end
     
     -- TODO: KEY TO GRAB CRATE
     function p:move(dt)
@@ -195,57 +259,158 @@ function makeplayer(cx, cy)
     return p
 end
 
-player = makeplayer(1.5, 1.5)
+function transformcollide(r1,r2,dx,dy)
+    r2:movex(dx)
+    r2:movey(dy)
+    if math.floor(r1.cx) == math.floor(r2.cx) and math.floor(r1.cy) == math.floor(r2.cy) then
+    r2.cx = r2.cx - dx
+    r2.cy = r2.cy - dy
+        collide1(r1,r2)
+    r2.cy = r2.cy + dy
+    r2.cx = r2.cx + dx
+    end
+    r2:movey(-dy)
+    r2:movex(-dx)
+end
 
-o1 = rigidbody(3.5, 2.5, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN)
-o2 = rigidbody(3.5, 3.5, 0.0625, 0.0625, "crate.png", 1, 0, 0, 1, UP)
-o3 = object(2.5, 1.5, 0.0625, 0.0625, "crate.png", 1)
+function collide(r1,r2)
+    transformcollide(r1,r2, 0, 0)
+    transformcollide(r1,r2, 1, 0)
+    transformcollide(r1,r2, 0, 1)
+    transformcollide(r1,r2,-1, 0)
+    transformcollide(r1,r2, 0,-1)
+    transformcollide(r1,r2, 1, 1)
+    transformcollide(r1,r2,-1, 1)
+    transformcollide(r1,r2,-1,-1)
+    transformcollide(r1,r2, 1,-1)
+end
 
-objects = {player, o1}
-
-function collide(r1, r2)
+-- assumes both items are in the same coordinate system
+function collide1(r1, r2)
     if (r1.rigid and r2.rigid) then
+        
+        local intx1 = math.floor(r1.cx)
+        local inty1 = math.floor(r1.cy)
+        local intx2 = math.floor(r2.cx)
+        local inty2 = math.floor(r2.cy)
+        
+--        if intx1 ~= intx2 or inty1 ~= inty2 then return end
     
         if (math.abs(r1.cx - r2.cx) <= r1.xrad + r2.xrad and math.abs(r1.cy - r2.cy) <= r1.yrad + r2.yrad) then
 
             local xoffset = (math.abs(r1.cx - r2.cx) - (r1.xrad + r2.xrad))/2 -- is negative
             local yoffset = (math.abs(r1.cy - r2.cy) - (r1.yrad + r2.yrad))/2 -- is negative
+            
+            local dt = 0.02
 
             --print(xoffset, yoffset)
+            -- adding offset should check whether a border is crossed and should be done last
 
             if math.abs(xoffset) < math.abs(yoffset) then       
+                -- like this: [][]
+                local friction = 0
                 local v = (r1.weight * r1.velx + r2.weight * r2.velx) / (r1.weight + r2.weight)
                 if r1.weight > 99999 or r2.weight > 99999 then v=0 end
                 r1.velx = v
                 r2.velx = v
 
-                if r1.cx < r2.cx then -- r1 left of r2
-                    r1.cx = r1.cx + xoffset -- cx gets decreased (moves left)
-                    if r1.grav == RIGHT then r1.onfloor = true end
-                    r2.cx = r2.cx - xoffset -- cx gets increased (moves right)
-                    if r2.grav == LEFT then r2.onfloor = true end
-                else
-                    r1.cx = r1.cx - xoffset -- cx gets decreased (moves left)
-                    if r1.grav == LEFT then r1.onfloor = true end
-                    r2.cx = r2.cx + xoffset -- cx gets increased (moves right)
-                    if r2.grav == RIGHT then r2.onfloor = true end
+                if r1.cx < r2.cx then -- like this: [r1][r2]
+                    r1:movex(xoffset) -- cx gets decreased (r1 moves left)
+                    if r1.grav == RIGHT then
+                        r1.onfloor = true
+                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                    end
+                    r2:movex(-xoffset) -- cx gets increased (r2 moves right)
+                    if r2.grav == LEFT then
+                        r2.onfloor = true
+                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                    end
+                else -- like this: [r2][r1]
+                    r1:movex(-xoffset) -- cx gets decreased (r1 moves right)
+                    if r1.grav == LEFT then
+                        r1.onfloor = true
+                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                    end
+                    r2:movex(xoffset) -- cx gets increased (r2 moves left)
+                    if r2.grav == RIGHT then
+                        r2.onfloor = true
+                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                    end
                 end
+
+                --apply friction 1
+                local accel1 = FRICTION * friction / r1.weight
+                if (r1.vely > 0) then
+                    r1.vely = r1.vely - accel1 * dt
+                    if r1.vely < 0 then r1.vely = 0 end
+                else
+                    r1.vely = r1.vely + accel1 * dt
+                    if r1.vely > 0 then r1.vely = 0 end
+                end
+                
+                --apply friction 2
+                local accel2 = FRICTION * friction / r2.weight
+                if (r2.vely > 0) then
+                    r2.vely = r2.vely - accel2 * dt
+                    if r2.vely < 0 then r2.vely = 0 end
+                else
+                    r2.vely = r2.vely + accel2 * dt
+                    if r2.vely > 0 then r2.vely = 0 end
+                end
+
             else
+                -- like this: []
+                --            []
+                local friction = 0
                 local v = (r1.weight * r1.vely + r2.weight * r2.vely) / (r1.weight + r2.weight)
                 if r1.weight > 99999 or r2.weight > 99999 then v=0 end
                 r1.vely = v
                 r2.vely = v
 
-                if r1.cy < r2.cy then
-                    r1.cy = r1.cy + yoffset -- cy gets decreased (moves up)
-                    if r1.grav == DOWN then r1.onfloor = true end
-                    r2.cy = r2.cy - yoffset -- cy gets increased (moves down)
-                    if r2.grav == UP then r2.onfloor = true end
+                if r1.cy < r2.cy then -- like this: [r1]
+                                      --            [r2]
+                    r1:movey(yoffset) -- cy gets decreased (r1 moves up)
+                    if r1.grav == DOWN then
+                        r1.onfloor = true
+                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                    end
+                    r2:movey(-yoffset) -- cy gets increased (r2 moves down)
+                    if r2.grav == UP then
+                        r2.onfloor = true
+                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                    end
+                else -- like this: [r2]
+                     --            [r1]
+                    r1:movey(-yoffset) -- cy gets decreased (r1 moves down)
+                    if r1.grav == UP then
+                        r1.onfloor = true
+                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                    end
+                    r2:movey(yoffset) -- cy gets increased (r2 moves up)
+                    if r2.grav == DOWN then
+                        r2.onfloor = true
+                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                    end
+                end
+
+                --apply friction 1
+                local accel1 = FRICTION * friction / r1.weight
+                if (r1.velx > 0) then
+                    r1.velx = r1.velx - accel1 * dt
+                    if r1.velx < 0 then r1.velx = 0 end
                 else
-                    r1.cy = r1.cy - yoffset -- cy gets decreased (moves up)
-                    if r1.grav == UP then r1.onfloor = true end
-                    r2.cy = r2.cy + yoffset -- cy gets increased (moves down)
-                    if r2.grav == DOWN then r2.onfloor = true end
+                    r1.velx = r1.velx + accel1 * dt
+                    if r1.velx > 0 then r1.velx = 0 end
+                end
+                
+                --apply friction 2
+                local accel2 = FRICTION * friction / r2.weight
+                if (r2.velx > 0) then
+                    r2.velx = r2.velx - accel2 * dt
+                    if r2.velx < 0 then r2.velx = 0 end
+                else
+                    r2.velx = r2.velx + accel2 * dt
+                    if r2.velx > 0 then r2.velx = 0 end
                 end
             end
         end

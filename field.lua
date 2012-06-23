@@ -1,53 +1,6 @@
-TOP   =  1
-UP    =  TOP
-BOTTOM= -1
-DOWN  = BOTTOM
-LEFT  =  2
-RIGHT = -2
-
-DIRS = { UP, DOWN, LEFT, RIGHT }
-
-CELLSIZE = 128
-WALLSIZE =   8
-WALLPERC =  WALLSIZE / CELLSIZE
-PRIO_BACK =   10
-PRIO_WALL =  300
-PRIO_PORTAL = 400
-MARKER_PRIO = 900
-SIGHT_RANGE = 4
-PORTAL_FONT_SIZE = 30
-
-DEFAULT_WIDTH = 64
-DEFAULT_HEIGHT = 32
-DEFAULT_BACKGROUND = "DEFAULT.png"
-
-function transformOffset(x,y,downdir,rightdir)
-    assertValidDir(rightdir)
-    assertValidDir(downdir)
-    assert(downdir ~= rightdir and downdir ~= -rightdir)
-   
-    if(downdir == DOWN) then
-        x = rightdir == RIGHT and x or 1 - x
-    elseif(downdir == UP) then
-        y = 1 - y
-        x = rightdir == RIGHT and x or 1 - x
-    elseif(downdir == RIGHT) then
-        if (rightdir == UP) then
-            x, y = y, 1-x
-        else
-            x, y = y, x
-        end
-    else
-        assert(downdir == LEFT)
-       
-        if(rightdir == DOWN) then
-            x, y = 1-y, x
-        else
-            x, y = 1 - y, 1 - x
-        end
-    end
-    return x,y
-end
+require 'archiver'
+require 'geometry'
+require 'constants'
 
 function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio, objgrav,objmirr)
     objgrav = objgrav or DOWN
@@ -64,32 +17,31 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     
     --Now I have the actual screen position the top left corner of the image is mapped to
     local sx = nextdir(downdir) == rightdir and 1 or -1
-    if(objmirr) then sx = -sx end
     
     physminx = cellx + CELLSIZE * math.min(xmin,xmax)
     physminy = celly + CELLSIZE * math.min(ymin,ymax)
     
-    local angle -- (* PI/2)
-    if (downdir == DOWN) then
-        angle = 0
-    elseif (downdir == UP) then
-        angle = 2
-    elseif (downdir == RIGHT) then
-        angle = 3
-    else
-        angle = 1
+    local angle = 0 -- (* PI/2)
+    while(downdir ~= DOWN) do
+        angle = (angle + 1) % 4
+        downdir = nextdir(downdir)
     end
     
+    local gravAngle = 0
     while(objgrav ~= DOWN) do
         objgrav = nextdir(objgrav)
-        
-        if(objmirr) then
-            angle = (angle + 3) % 4
-        else
-            angle = (angle + 1) % 4
-        end
+        gravAngle = (gravAngle + 1) % 4
     end
     
+    --careful: Turn in opposite direction in mirrored situation
+    if (sx == -1) then
+        gravAngle = (-gravAngle + 4) % 4
+    end
+    
+    angle = (angle + gravAngle) % 4
+    
+    --effectively not mirrored if mirrored twice 
+    if(objmirr) then sx = -sx end
     if sx == 1 then
         if (angle == 3) then
             physminy = physminy + dimx
@@ -116,20 +68,6 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     render:add(textures[img], physminx, physminy, zprio, brightness, sx, 1, angle)
 end
 
-cellCount = 0
-
-function DefaultCell()
-    local cell = {}
-    cell.background = DEFAULT_BACKGROUND;
-    cell.colTop    = false
-    cell.colLeft   = false
-    cell.portals = {};
-    cell.objects = {};
-    cellCount = cellCount + 1
-    cell.counter = cellCount    
-    return cell;
-end
-
 function Portal()
     local portal = {}
     --[[properties:
@@ -139,88 +77,21 @@ function Portal()
     return portal;
 end
 
-function assertValidDir(dir)
-    assert(dir == LEFT or dir == RIGHT or dir == UP or dir == DOWN, "Invalid direction: "..dir)
-end
-
-function dirtodxy(dir)
-    assertValidDir(dir)
-    if (dir == LEFT) then
-        return -1,0
-    elseif (dir == RIGHT) then
-        return 1,0
-    elseif (dir == TOP) then
-        return 0,-1
-    elseif (dir == BOTTOM) then
-        return 0,1
-    end
-end
-
-function dirToStr(dir)
-    assertValidDir(dir)
-    if(dir == UP) then return "UP"
-    elseif(dir == DOWN) then return "DOWN"
-    elseif(dir == LEFT) then return "LEFT"
-    else return "RIGHT" end
-end
-
-function dirFromStr(dirstr)
-    if(dirstr == "UP") then
-        return UP
-    elseif(dirstr == "DOWN") then
-        return DOWN
-    elseif(dirstr == "LEFT") then
-        return LEFT
-    elseif(dirstr == "RIGHT") then
-        return RIGHT
-    end
-    
-    error("dirFromStr: Invalid direction string ("..dirstr..")")
-end
-
-function dxytodir(dx,dy)
-    if (dx == 1) then
-        return RIGHT
-    elseif (dx == -1) then
-        return LEFT
-    elseif (dy == 1) then
-        return BOTTOM
-    elseif (dy == -1) then
-        return TOP
-    else
-        assert(false, "dxyToDir: SHITTY INPUT");
-    end
-end
-
-function invertPair(dirdown,dirright)
-    local downarrow
-    local rightarrow
-    
-    if (dirdown == DOWN or dirdown == UP) then
-        downarrow = dirdown
-        rightarrow = dirright
-    else
-        downarrow  = dirright == DOWN and RIGHT or LEFT
-        rightarrow = dirdown == RIGHT and DOWN  or UP
-    end
-    
-    return downarrow, rightarrow
-end
-
-function nextdir(dir)
-    assertValidDir(dir)
-    if (dir == DOWN) then
-        return RIGHT
-    elseif(dir == RIGHT) then
-        return UP
-    elseif(dir == UP) then
-        return LEFT
-    else
-        return DOWN
-    end
-end
-
 function DefaultField(w,h)
+    local cellCount = 0
+
+    function DefaultCell()
+        local cell = {}
+        cell.background = DEFAULT_BACKGROUND;
+        cell.colTop    = false
+        cell.colLeft   = false
+        cell.portals = {};
+        cell.objects = {};
+        cellCount = cellCount + 1
+        cell.counter = cellCount    
+        return cell;
+    end
+
     w = w or DEFAULT_WIDTH
     h = h or DEFAULT_HEIGHT
 
@@ -229,6 +100,11 @@ function DefaultField(w,h)
     field.height = h;
     field._cells = {};
     field._defCell = DefaultCell();
+    
+    player = makeplayer();
+    player.cx = 1.5
+    player.cy = 1.5
+    objects = { player }
     
     --one cell more to the left and bottom for the walls
     function defRow()
@@ -274,6 +150,12 @@ function DefaultField(w,h)
         assertValidDir(up2)
         
         print(x1,y1,x2,y2,dirToStr(side1),dirToStr(up1),dirToStr(side2),dirToStr(up2))
+        
+        --Prefer portals that point up, just because I
+        --dont wnat the graphic to be upside down all the time
+        if (up1 == DOWN or up2 == DOWN) then
+            up1,up2 = -up1,-up2
+        end
         
         if(self:isBadPortalPosition(x1,y1,side1))
         or(self:isBadPortalPosition(x2,y2,side2)) then
@@ -349,6 +231,10 @@ function DefaultField(w,h)
     end
     
     function field:shadeCell(x,y,xmin,ymin,downdir,rightdir,brightness)
+        -- brightness adjustment:
+        brightness = brightness/255
+        brightness = brightness*brightness*255
+    
         -- rightdir: Direction the physically right side of the cell is faced to
         -- downdir:  Direction the physically down  side of the cell is faced to
         local cell = self:get(x,y)
@@ -374,7 +260,7 @@ function DefaultField(w,h)
         end
         
         for k,o in pairs(cell.objects) do
-            drawTileInCell(xmin,ymin, o.cx % 1 - o.xrad, o.cy % 1 - o.yrad, o.cx % 1 + o.xrad, o.cy % 1 + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
+            drawTileInCell(xmin,ymin, o.cx - x - o.xrad, o.cy - y - o.yrad, o.cx - x + o.xrad, o.cy - y + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
         end
     end
     
@@ -413,6 +299,9 @@ function DefaultField(w,h)
         
         --destroy portals if there are any
         field:destroyPortal(x,y,dir)
+        local dx,dy = dirtodxy(dir)
+        field:destroyPortal(x+dx,y+dy,-dir)
+        
         local cell = self:get(x,y)
         
         if (dir == TOP) then
@@ -446,26 +335,6 @@ function DefaultField(w,h)
         end
     end
     
-    function field:toggleWallStrip(x,y,dir,...)
-        if not dir then return end
-        
-        assertValidDir(dir)
-        if(dir == TOP) then
-            field:toggleWall(x,y-1,LEFT)
-            y = y - 1
-        elseif(dir == DOWN) then
-            field:toggleWall(x,y,LEFT)
-            y = y + 1
-        elseif(dir == RIGHT) then
-            field:toggleWall(x,y,TOP)
-            x = x + 1
-        elseif(dir == LEFT) then
-            field:toggleWall(x-1,y,TOP)
-            x = x - 1
-        end
-        self:toggleWallStrip(x,y,...)
-    end
-    
     function field:collectObjects()
         for i = 1,self.width do
             for j = 1,self.height do
@@ -481,6 +350,10 @@ function DefaultField(w,h)
             local map = self:get(x,y).objects;
             --print("x:"..x..",y="..y)
             map[#map+1] = e;
+            
+            for k,s in pairs(e.Subobjects()) do
+                map[#map+1] = s;
+            end
         end
     end
     
@@ -526,7 +399,7 @@ function DefaultField(w,h)
                     if(cell.portals[dir]) then
                         local portal = cell.portals[dir]
                         local img = "portalin.png"
-                        local mirrored = false
+                        local mirrored = true --default mirror, because the graphic is drawn the wrong way
                         if  portal.yout > y
                         or (portal.yout == y and portal.xout > x)
                         or (portal.yout == y and portal.xout == x and portal.sideout >= dir) then
@@ -587,7 +460,7 @@ function DefaultField(w,h)
         local cellx = math.floor(player.cx)
         local celly = math.floor(player.cy)
         
-        function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir)
+        function toDoNode(screenx, screeny, logx, logy, stepsleft,downdir,rightdir, hitx, hity)
             local node = {}
             assertValidDir(downdir)
             assertValidDir(rightdir)
@@ -598,6 +471,8 @@ function DefaultField(w,h)
             node.stepsleft = stepsleft
             node.downdir   = downdir
             node.rightdir  = rightdir
+            node.hitx      = hitx
+            node.hity      = hity
             return node
         end
         
@@ -617,7 +492,7 @@ function DefaultField(w,h)
         px = px - ox * CELLSIZE
         py = py - oy * CELLSIZE
         
-        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, playerright)
+        toDo[0] = toDoNode(0, 0, cellx, celly, SIGHT_RANGE, player.grav, playerright, ox, oy)
         
         local next   = 0
         local writer = 1
@@ -653,25 +528,25 @@ function DefaultField(w,h)
                     
                     if(not field:hasWall(node.logx,node.logy,-node.rightdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.rightdir,node.downdir)
-                        toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - 1, newother, -newdir)
+                        toDo[writer] = toDoNode(node.screenx - 1, node.screeny, newx, newy, node.stepsleft - node.hitx, newother, -newdir, 1, node.hity)
                         writer = writer + 1
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,node.rightdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.rightdir,node.downdir)
-                        toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - 1, newother,  newdir)
+                        toDo[writer] = toDoNode(node.screenx + 1, node.screeny, newx, newy, node.stepsleft - (1 - node.hitx), newother,  newdir, 0, node.hity)
                         writer = writer + 1
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,node.downdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy,  node.downdir, node.rightdir)
-                        toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - 1, newdir,  newother)
+                        toDo[writer] = toDoNode(node.screenx, node.screeny + 1, newx, newy, node.stepsleft - (1 - node.hity), newdir,  newother, node.hitx, 0)
                         writer = writer + 1
                     end
                     
                     if(not field:hasWall(node.logx,node.logy,-node.downdir)) then
                         newx, newy, newdir, newother = field:go(node.logx,node.logy, -node.downdir, node.rightdir)
-                        toDo[writer] = toDoNode(node.screenx, node.screeny - 1, newx, newy, node.stepsleft - 1, -newdir,  newother)
+                        toDo[writer] = toDoNode(node.screenx, node.screeny - 1, newx, newy, node.stepsleft - node.hity, -newdir,  newother, node.hitx, 1)
                         writer = writer + 1
                     end
                 end
@@ -679,263 +554,11 @@ function DefaultField(w,h)
         end
     end
     
-    function field:export(filename)
-        local f = assert(io.open(filename,"w"))
-        
-        function writeProp(name,value)
-            f:write(name, " ", value, "\n")
-        end
-        
-        writeProp("mapWidth",self.width)
-        writeProp("mapHeight", self.height)
-        
-        -- print list of non-walls
-        for y = 1,self.height do
-            f:write("    ")
-            for x = 1,self.width do
-                if(self:hasWall(x,y,TOP)) then
-                    f:write(x, " ", y, " ", dirToStr(TOP), " ")
-                end
-                
-                if(self:hasWall(x,y,LEFT)) then
-                    f:write(x, " ", y, " ", dirToStr(LEFT), " ")
-                end
-            end
-            
-            f:write("\n")
-        end
-        
-        f:write(-1, " ", -1, " ", "END_OF_WALLS\n\n")
-        
-        f:write("SPECIAL_BACKGROUNDS\n")
-        for y = 1,self.height do
-            for x = 1,self.width do
-                local background = self:get(x,y).background
-                if background ~= DEFAULT_BACKGROUND then
-                    f:write(x, " ", y, " ", background, "\n")
-                end
-            end
-        end
-            
-        f:write(-1, " ", -1, " ", "END_OF_BACKGROUNDS\n\n")    
-        
-        f:write("PORTALS\n")
-        for y = 1,self.height do
-            for x = 1,self.width do
-                local cell = self:get(x,y)
-                for _,e in pairs(DIRS) do
-                    if(cell.portals[e]) then
-                        local portal = cell.portals[e]
-                        
-                        if  portal.yout > y
-                        or (portal.yout == y and portal.xout > x)
-                        or (portal.yout == y and portal.xout == x and portal.sideout >= e) then
-                            f:write("    PORTAL "..x.." "..y.." "..portal.xout.." "..portal.yout.." "..e.." "..portal.upin.." "..portal.sideout.." "..portal.upout.."\n")
-                        end
-                    end
-                end
-            end
-        end
-        
-        f:write("END_OF_PORTALS\n\n")
-        
-        for k,o in pairs(objects) do
-            f:write(o.typ, "\n")
-            
-            for key,value in pairs(o) do
-                if (type(value) ~= "function") then
-                    f:write("    "..key.." "..type(value).." "..tostring(value).."\n")
-                end
-            end
-            
-            f:write("END_OF_OBJECT\n")
-        end
-        
-        f:write("END_OF_MAP\n")
-        f:close()
-    end
-    
     return field;
 end
 
-function import(filename)
-    local f = io.open(filename, "r")
-    
-    if not f then
-        field = DefaultField()
-        return
-    end
 
-    function readString()
-        local str
-        repeat
-            str = f:read(1)
-        until str ~= " " and str ~= "\n"
-        
-        repeat
-            next = f:read(1)
-            
-            if(next ~= " " and next ~= "\n") then
-                str = str..next
-            else
-                break
-            end
-        until false
-        
-        return str
-    end
-
-    function expect(name)
-        local str = readString()
-        
-        if (str ~= name) then
-            error("Expected '"..name.."', but found '"..str.."'.")
-        end
-    end
-
-    function readProp(name)
-        expect(name)
-        return f:read("*number")
-    end
-
-    local w = readProp("mapWidth")
-    local h = readProp("mapHeight")
-    
-    field = DefaultField(w,h)
-    objects = {}
-    
-    local x
-    local y
-    local dir
-    repeat
-        x = f:read("*number")
-        y = f:read("*number")
-        dir = readString()
-        
-        if(dir ~= "END_OF_WALLS") then
-            field:toggleWall(x,y,dirFromStr(dir))
-        else
-            break;
-        end
-    until false
-    
-    local x
-    local y
-    local background
-    expect("SPECIAL_BACKGROUNDS")
-    repeat
-        x = f:read("*number")
-        y = f:read("*number")
-        background = readString()
-        
-        if(background ~= "END_OF_BACKGROUNDS") then
-            field:get(x,y).background = background
-        else
-            break;
-        end
-    until false
-    
-    expect("PORTALS")
-    str = readString()
-    while(str == "PORTAL") do
-        local x = f:read("*n")
-        local y = f:read("*n")
-        local xout = f:read("*n")
-        local yout = f:read("*n")
-        local dir = f:read("*n")
-        local up = f:read("*n")
-        local dirout = f:read("*n")
-        local upout = f:read("*n")
-        
-        field:openPortal(x,y,xout,yout,dir,up,dirout,upout)
-        str = readString()
-    end
-    
-    if (str ~= "END_OF_PORTALS") then
-        error("Expected 'END_OF_PORTALS' but found '"..str.."'")
-    end
-    
-    local constructor = readString()
-    
-    while(constructor ~= "END_OF_MAP") do
-        local o  = _G[constructor]()
-        local prop = readString()
-        
-        while(prop ~= "END_OF_OBJECT") do
-            local typname = readString()
-            if(typname == "string") then
-                o[prop] = readString()
-            elseif(typname == "boolean") then
-                o[prop] = readString() == "true"
-            elseif(typname =="number") then
-                o[prop] = f:read("*number")
-            else
-                error("I dont know that type: "..typname)
-            end
-            
-            prop = readString()
-        end
-        
-        objects[#objects+1] = o
-        
-        if(constructor == "makeplayer") then
-            player = o
-        end
-        
-        constructor = readString()
-    end
-    
-    io.close()
-end
 
 function fieldInit()
-    testfield = 1
-
-    if testfield == 1 then
-        field = DefaultField(20,20,true)
-        player.cx = 2.5
-        player.cy = 2.5
-    
-        field:openPortal(2,2,4,2,LEFT,UP,RIGHT,DOWN)
-        field:get(3,2).colLeft = false
-        field:get(2,2).colLeft = false
-        field:get(4,2).colLeft = false
-        field:get(5,2).colLeft = false
-    elseif testfield == 2 then
-        field = DefaultField(20,20,true)
-        player.cx = 2.5
-        player.cy = 2.5
-        field:get(4,3).colTop = false;
-        field:get(4,2).colLeft = false;
-        field:get(3,2).colLeft = false;
-        field:get(2,3).colTop = false;
-        field:get(2,4).colTop = false;
-        field:get(3,4).colLeft = false;
-        field:get(4,4).colLeft = false;
-        field:get(4,5).colTop = false;
-        field:get(4,6).colTop = false;
-        field:get(4,6).colLeft = false;
-        field:get(3,6).colLeft = false;
-        field:get(2,6).colTop = false;
-    
-        field:get(5,6).colTop = false;
-        field:get(5,5).colTop = false;
-        field:get(6,4).colLeft = false;
-        field:get(7,4).colLeft = false;
-        field:get(7,4).colTop = false;
-        field:get(7,3).colTop = false;
-    
-        field:openPortal(2,6,5,5,TOP,RIGHT,BOTTOM,RIGHT)
-        field:openPortal(4,2,7,3,BOTTOM,RIGHT,TOP,RIGHT)
-    else
-        field = DefaultField()
-    end
-    
-    field:export("blabla.map")
-    import("blabla.map")
-    
-    --field:get(3,3).colLeft = false
-    --field:get(7,6).colLeft = false
-    
-    --field:openPortal(2,2,1,3,RIGHT,UP,LEFT,UP)
+    field = DefaultField()
 end

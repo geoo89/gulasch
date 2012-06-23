@@ -1,3 +1,4 @@
+require 'archiver'
 require 'field'
 require 'object'
 
@@ -37,7 +38,7 @@ end
 -- Save current level
 function editor:saveLevel()
     print("Saving level " .. self.LEVEL_DIR .. self.level_list[self.level_idx]) 
-    field:export(self.LEVEL_DIR .. self.level_list[self.level_idx])
+    export(self.LEVEL_DIR .. self.level_list[self.level_idx])
 end
 
 -- Initialise editor --> load file list
@@ -115,8 +116,9 @@ end
 -- Set portal
 function editor:setPortal(dir) 
     if (self.half_open) then
+        --note: Non-mirroring portals are preferred
         field:openPortal(self.half_open.xin, self.half_open.yin, self.selectx, self.selecty,
-                         self.half_open.side, nextdir(self.half_open.side), dir, nextdir(dir))
+                         self.half_open.side, nextdir(self.half_open.side), dir, -nextdir(dir))
         self.half_open = nil
     else
         self.half_open = {}
