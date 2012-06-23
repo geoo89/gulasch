@@ -16,27 +16,20 @@ MODE = {
     EDITOR = 1
 }
 
+-- Global frame counter
+global_frame = 1
+
 mode = MODE.EDITOR
 
 function love.load()
     -- print("Test")
-    assert(gr.setMode(RESX, RESY, true, false), "Could not set screen mode")
-    loadTextures()
+    assert(gr.setMode(RESX, RESY, false, false), "Could not set screen mode")
+    textures:init()
     fieldInit()
     editor:init()
     text:init()
     isPaused = false
-    
-    ps = gr.newParticleSystem(textures["particle.png"], 32)
-    ps:setEmissionRate(100)
-    ps:setParticleLife(0.5,5)
-    ps:setRadialAcceleration(100,500)
-    ps:setTangentialAcceleration(100,400)
-    ps:setSizeVariation(1)
-    ps:setSpread(2*math.pi)
-    ps:setSpeed(1,5)
-    ps:setSpin(0,2*math.pi,1)
-    ps:start()
+
     
     --local v = vector.new(1, 2)
     --local w = vector.new(3, 5)

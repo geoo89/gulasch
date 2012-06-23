@@ -6,11 +6,16 @@ function render:sort()
 end
 
 -- Adds Drawable object
-function render:add(obj, minx, miny, z, brightness, sx, sy, r)
-    assert(obj, "Draw object does not exist")
+function render:add(obj, minx, miny, z, brightness, sx, sy, r, frame)
+    assert(obj, "Rendered object does not exist")
     assert(minx and miny and z, "Dimensions not given")
     local brightness = brightness or 255
+    local frame = frame or 1
     
+    local obj = obj
+    if (obj.img) then
+        obj = obj.img[frame]
+    end
     -- Bug: scales about center
     
     -- Scale images
@@ -50,4 +55,5 @@ function render:draw()
     gr.setColor(pr, pg, pb, pa)
 
     self.content = {}
+    global_frame = global_frame + 1
 end

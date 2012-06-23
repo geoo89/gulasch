@@ -2,7 +2,7 @@ require 'archiver'
 require 'geometry'
 require 'constants'
 
-function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio, objgrav,objmirr)
+function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,brightness,zprio, objgrav,objmirr, frame)
     objgrav = objgrav or DOWN
     objmirr = objmirr or false
 
@@ -65,7 +65,7 @@ function drawTileInCell(cellx,celly,xmin,ymin,xmax,ymax,img,downdir,rightdir,bri
     angle = angle * math.pi / 2;
     
     --print(img, " px", physminx, " py", physminy, " z", zprio, " br", brightness, " ", sx, " ", 1, " ang", angle)
-    render:add(textures[img], physminx, physminy, zprio, brightness, sx, 1, angle)
+    render:add(textures[img], physminx, physminy, zprio, brightness, sx, 1, angle, frame)
 end
 
 function Portal()
@@ -260,7 +260,10 @@ function DefaultField(w,h)
         end
         
         for k,o in pairs(cell.objects) do
-            drawTileInCell(xmin,ymin, o.cx - x - o.xrad, o.cy - y - o.yrad, o.cx - x + o.xrad, o.cy - y + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored)
+            -- What frame do we draw
+            local frame = (global_frame + o.phase) % (textures[o.img].last) + 1
+            
+            drawTileInCell(xmin,ymin, o.cx - x - o.xrad, o.cy - y - o.yrad, o.cx - x + o.xrad, o.cy - y + o.yrad, o.img, downdir,rightdir, brightness, o.z, o.grav, o.mirrored, frame)
         end
     end
     
