@@ -68,6 +68,8 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
         o:movex(o.velx * dt)
         o:movey(o.vely * dt)
         
+        self.onfloor = false;
+        
         return self
     end
     
