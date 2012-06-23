@@ -442,8 +442,6 @@ function collide1(r1, r2)
     end
 end
 
-fieldInit()
-
 function collidecell(r, nx, ny)
     
     local curcell = field:get(nx,ny)
