@@ -20,7 +20,7 @@ mode = MODE.EDITOR
 
 function love.load()
     -- print("Test")
-    assert(gr.setMode(RESX, RESY, true, false), "Could not set screen mode")
+    assert(gr.setMode(RESX, RESY, false, false), "Could not set screen mode")
     loadTextures()
     fieldInit()
     editor:init()
@@ -67,8 +67,10 @@ function love.draw()
 end
 
 cnt = 0
+dt = 0
 
-function love.update(dt)
+function love.update(dt_local)
+    dt = dt_local
     if isPaused then
         return
     end
@@ -76,21 +78,20 @@ function love.update(dt)
     if (dt > 0.05) then dt = 0.05 end
 
     if mode == MODE.RENDER then
+        player:move(dt)
+
         objects = map(objects, function(o) return o:update(dt) end)
         
-        for i1,v1 in pairs(objects) do
-            collidewall(v1)
-        end
-        --collidewall(player)
-    
+--        for i1,v1 in pairs(objects) do
+--            for i2,v2 in pairs(objects) do
+--                if (i1 < i2) then collide(v1,v2) end
+--            end
+--        end
 
-        for i1,v1 in pairs(objects) do
-            for i2,v2 in pairs(objects) do
-                if (i1 < i2) then collide(v1,v2) end
-            end
-        end
-        
-        player:move(dt)
+--        for i1,v1 in pairs(objects) do
+--            collidewall(v1)
+--        end
+
     else
         editor:mouseMoved(mouse.getX(), mouse.getY())
         editor:update(dt)
