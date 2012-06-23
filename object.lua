@@ -440,13 +440,23 @@ function collidecell(r, nx, ny)
     
     local curcell = field:get(nx,ny)
     
-    if curcell.colTop == true then
+    if field:hasWall(nx,ny,TOP) then
         local wall = rigidbody(nx+0.5, ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
         collide1(r,wall)
     end
+    
+    if field:hasWall(nx,ny,RIGHT) then
+        local wall = rigidbody(nx + 1, ny+0.5, WALLPERC, 0.5 + WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
+        collide1(r,wall)
+    end
 
-    if curcell.colLeft == true then
+    if field:hasWall(nx,ny,LEFT) then
         local wall = rigidbody(nx, ny+0.5, WALLPERC, 0.5+WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
+        collide1(r,wall)
+    end
+    
+    if field:hasWall(nx,ny,DOWN) then
+        local wall = rigidbody(nx+0.5, 1+ny, 0.5+WALLPERC, WALLPERC, "crate.png", 0, 0, 0, 99999999, DOWN)
         collide1(r,wall)
     end
 end
@@ -457,25 +467,24 @@ function collidewall(r)
     
     -- TODO: TAKE NEW ORIENTATION INTO ACCOUNT
     collidecell(r, wx, wy)
-    nx,ny = field:go(wx,wy,DOWN)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,UP)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,LEFT)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,RIGHT)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,RIGHT)
-    nx,ny = field:go(nx,ny,UP)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,RIGHT)
-    nx,ny = field:go(nx,ny,DOWN)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,LEFT)
-    nx,ny = field:go(nx,ny,DOWN)
-    collidecell(r, nx, ny)
-    nx,ny = field:go(wx,wy,LEFT)
-    nx,ny = field:go(nx,ny,UP)
-    collidecell(r, nx, ny)
     
+    if(not field:hasWall(wx,wy,DOWN)) then
+        nx,ny = field:go(wx,wy,DOWN)
+        collidecell(r, nx, ny)
+    end
+    
+    if(not field:hasWall(wx,wy,UP)) then
+        nx,ny = field:go(wx,wy,UP)
+        collidecell(r, nx, ny)
+    end
+    
+    if(not field:hasWall(wx,wy,LEFT)) then
+        nx,ny = field:go(wx,wy,LEFT)
+        collidecell(r, nx, ny)
+    end
+    
+    if(not field:hasWall(wx,wy,RIGHT)) then
+        nx,ny = field:go(wx,wy,RIGHT)
+        collidecell(r, nx, ny)
+    end
 end
