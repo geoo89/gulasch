@@ -8,10 +8,11 @@ function object(cx, cy, xrad, yrad, img, z)
     o.cy = cy
     o.xrad = xrad
     o.yrad = yrad
-    o.img = img
     o.z = z or 0
     o.mirrored = false
     o.grav = DOWN
+    o.img = img
+    o.phase = 10
     
     --Sekti: Objects should be able to maintain non-physical subobjects.
     --example:
@@ -37,11 +38,14 @@ function object(cx, cy, xrad, yrad, img, z)
         return sub
     end
     
-    function o:update() return self end
-    
-    function o:render()
-        render:add(textures[o.img], (o.cx - o.xrad - 1) * 128, (o.cy - o.yrad - 1) * 128, o.z, 255)
+    function o:update() 
+        
+        return self 
     end
+    
+    --function o:render()
+    --    render:add(textures[o.img[o.frame]], (o.cx - o.xrad - 1) * 128, (o.cy - o.yrad - 1) * 128, o.z, 255)
+    --end
     
     return o
 end

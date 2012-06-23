@@ -16,12 +16,18 @@ MODE = {
     EDITOR = 1
 }
 
+-- Global frame counter
+global_frame = 1
+frame_accum = 0
+ANIM_DT = 0.01
+
 mode = MODE.EDITOR
 
 function love.load()
     -- print("Test")
     assert(gr.setMode(RESX, RESY, false, false), "Could not set screen mode")
-    loadTextures()
+
+    textures:init()
     editor:init()
     text:init()
     isPaused = false
@@ -36,10 +42,6 @@ function love.load()
     --ps:setSpeed(1,5)
     --ps:setSpin(0,2*math.pi,1)
     --ps:start()
-    
-    --local v = vector.new(1, 2)
-    --local w = vector.new(3, 5)
-    --print(v .. w .. (v + w) .. (v - w) .. (v * w) .. (2 * v) .. (v * 3) .. v.length() .. v.ortho() .. v.dot(w))
 end
 
 function love.draw()
@@ -56,6 +58,7 @@ function love.draw()
     
     text:print("x:"..(math.floor(player.cx*100)/100).." y:"..(math.floor(player.cy*100)/100))
     text:print(timer.getFPS() .. ' fps')
+    text:print(editor.level_list[editor.level_idx])
     --text:print(timer.getFPS(), 100, 100, 50)
     text:print("Move crate to goal", 20, {255, 255, 255, 255})
     if WON==true then 
@@ -76,6 +79,12 @@ function love.update(dt_local)
     
     if (dt > 0.05) then dt = 0.05 end
 
+    frame_accum = frame_accum + dt
+    if (frame_accum > ANIM_DT) then
+        global_frame = global_frame + math.floor(frame_accum / ANIM_DT)
+        frame_accum = frame_accum % ANIM_DT
+    end
+    
     if mode == MODE.RENDER then
         player:move(dt)
 

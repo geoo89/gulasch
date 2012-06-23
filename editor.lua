@@ -11,8 +11,10 @@ editor = {
     level_list = {},
     level_idx = 1,
     
-    object_types = {function() return rigidbody(0, 0, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN) end}, 
-    object_names = {"crate.png"},
+    object_types = {function() return rigidbody(0, 0, 0.125, 0.125, "crate.png", 50, 0, 0, 1, DOWN) end,
+                    function() return rigidbody(0, 0, 0.125, 0.125, "crate_move.png", 50, 0, 0, 1, DOWN) end,
+                    function() return rigidbody(0, 0, 0.25, 0.25, "sawblade.png", 50, 0, 0, 1, DOWN) end}, 
+    object_names = {"crate.png", "crate_move.png", "sawblade.png"},
     wall = LEFT
 } 
 
