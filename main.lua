@@ -18,6 +18,8 @@ MODE = {
 
 -- Global frame counter
 global_frame = 1
+frame_accum = 0
+ANIM_DT = 0.01
 
 mode = MODE.EDITOR
 
@@ -77,6 +79,12 @@ function love.update(dt_local)
     
     if (dt > 0.05) then dt = 0.05 end
 
+    frame_accum = frame_accum + dt
+    if (frame_accum > ANIM_DT) then
+        global_frame = global_frame + math.floor(frame_accum / ANIM_DT)
+        frame_accum = frame_accum % ANIM_DT
+    end
+    
     if mode == MODE.RENDER then
         player:move(dt)
 

@@ -55,5 +55,4 @@ function render:draw()
     gr.setColor(pr, pg, pb, pa)
 
     self.content = {}
-    global_frame = global_frame + 1
 end
