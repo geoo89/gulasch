@@ -78,6 +78,13 @@ function rigidbody(cx, cy, xrad, yrad, img, z, velx, vely, weight, grav)
 --            if (self ~= v1) then collide(self,v1) end
 --        end
 
+        o.tempfriction = {
+            left  = 0.0,
+            right = 0.0,
+            above = 0.0,
+            below = 0.0
+        }
+
         collide(self)
         
         collidewall(self)
@@ -234,18 +241,20 @@ function makeplayer(cx, cy)
             self.onfloor = false
         end 
 
-        if self.onfloor then 
-            self.velx = (1 - x_floor) * self.velx
-            self.vely = (1 - y_floor) * self.vely
-        end
+        --if self.onfloor then 
+        --    self.velx = (1 - x_floor) * self.velx
+        --    self.vely = (1 - y_floor) * self.vely
+        --end
 
         if kb.isDown('left') then
             if self.onfloor then
                 if x_floor ~= 0 then
-                    self.velx = -FLOOR_SPEED * x_floor -- math.min(FLOOR_SPEED, math.abs(self.velx) + dt * FLOOR_ACCEL)
+                    --self.velx = -FLOOR_SPEED * x_floor
+                    self.velx = -x_floor*math.min(FLOOR_SPEED, math.abs(self.velx) + dt * FLOOR_ACCEL)
                 end
                 if y_floor ~= 0 then
-                    self.vely = -FLOOR_SPEED * y_floor
+                    --self.vely = -FLOOR_SPEED * y_floor
+                    self.vely = -y_floor*math.min(FLOOR_SPEED, math.abs(self.vely) + dt * FLOOR_ACCEL)
                 end
             else 
                 self.velx = self.velx - dt * AIR_ACCEL * x_floor
@@ -254,10 +263,12 @@ function makeplayer(cx, cy)
         elseif kb.isDown('right') then
             if self.onfloor then 
                 if x_floor ~= 0 then
-                    self.velx = FLOOR_SPEED * x_floor
+                    --self.velx = FLOOR_SPEED * x_floor
+                    self.velx = x_floor*math.min(FLOOR_SPEED, math.abs(self.velx) + dt * FLOOR_ACCEL)
                 end
                 if y_floor ~= 0 then
-                    self.vely = FLOOR_SPEED * y_floor
+                    --self.vely = FLOOR_SPEED * y_floor
+                    self.vely = y_floor*math.min(FLOOR_SPEED, math.abs(self.vely) + dt * FLOOR_ACCEL)
                 end
             else 
                 self.velx = self.velx + dt * AIR_ACCEL * x_floor
@@ -366,23 +377,25 @@ function collide1(r1, r2)
                     r1:movex(xoffset) -- cx gets decreased (r1 moves left)
                     if r1.grav == RIGHT then
                         r1.onfloor = true
-                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                        if (r1.weight < 99999) then friction = math.max(0, r1.weight-r1.tempfriction.right) end
+                        r1.tempfriction.right = friction
                     end
                     --r2:movex(-xoffset) -- cx gets increased (r2 moves right)
                     if r2.grav == LEFT then
                         r2.onfloor = true
-                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                        if (r2.weight < 99999) then friction = r2.weight end
                     end
                 else -- like this: [r2][r1]
                     r1:movex(-xoffset) -- cx gets decreased (r1 moves right)
                     if r1.grav == LEFT then
                         r1.onfloor = true
-                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                        if (r1.weight < 99999) then friction = math.max(0, r1.weight-r1.tempfriction.left) end
+                        r1.tempfriction.left = friction
                     end
                     --r2:movex(xoffset) -- cx gets increased (r2 moves left)
                     if r2.grav == RIGHT then
                         r2.onfloor = true
-                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                        if (r2.weight < 99999) then friction = r2.weight end
                     end
                 end
 
@@ -420,24 +433,26 @@ function collide1(r1, r2)
                     r1:movey(yoffset) -- cy gets decreased (r1 moves up)
                     if r1.grav == DOWN then
                         r1.onfloor = true
-                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                        if (r1.weight < 99999) then friction = math.max(0, r1.weight-r1.tempfriction.below) end
+                        r1.tempfriction.below = friction
                     end
                     --r2:movey(-yoffset) -- cy gets increased (r2 moves down)
                     if r2.grav == UP then
                         r2.onfloor = true
-                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                        if (r2.weight < 99999) then friction = r2.weight end
                     end
                 else -- like this: [r2]
                      --            [r1]
                     r1:movey(-yoffset) -- cy gets decreased (r1 moves down)
                     if r1.grav == UP then
                         r1.onfloor = true
-                        if (r1.weight < 99999) then friction = friction + r1.weight end
+                        if (r1.weight < 99999) then friction = math.max(0, r1.weight-r1.tempfriction.above) end
+                        r1.tempfriction.above = friction
                     end
                     --r2:movey(yoffset) -- cy gets increased (r2 moves up)
                     if r2.grav == DOWN then
                         r2.onfloor = true
-                        if (r2.weight < 99999) then friction = friction + r2.weight end
+                        if (r2.weight < 99999) then friction = r2.weight end
                     end
                 end
 
